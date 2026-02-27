@@ -1,0 +1,154 @@
+{
+  "servers": [
+    {
+      "name": "fetch-server",
+      "enabled": true,
+      "port": 9001,
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-fetch"],
+      "supergatewayArgs": {
+        "stdio": true,
+        "outputTransport": "streamableHttp",
+        "port": 9001,
+        "cors": true
+      },
+      "env": {},
+      "autoRestart": true,
+      "maxRestarts": 5,
+      "healthCheck": {
+        "enabled": true,
+        "interval": 10000,
+        "endpoint": "/mcp",
+        "timeout": 5000
+      }
+    },
+    {
+      "name": "filesystem-server",
+      "enabled": false,
+      "port": 8001,
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/root/data"],
+      "supergatewayArgs": {
+        "stdio": true,
+        "outputTransport": "sse",
+        "port": 8001,
+        "ssePath": "/sse",
+        "messagePath": "/message",
+        "cors": true
+      },
+      "env": {},
+      "autoRestart": true,
+      "maxRestarts": 3,
+      "healthCheck": {
+        "enabled": true,
+        "interval": 10000,
+        "endpoint": "/sse",
+        "timeout": 5000
+      }
+    },
+    {
+      "name": "github-server",
+      "enabled": false,
+      "port": 8002,
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "supergatewayArgs": {
+        "stdio": true,
+        "outputTransport": "sse",
+        "port": 8002,
+        "cors": true
+      },
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
+      },
+      "autoRestart": true,
+      "maxRestarts": 3,
+      "healthCheck": {
+        "enabled": true,
+        "interval": 10000,
+        "endpoint": "/sse",
+        "timeout": 5000
+      }
+    }
+  ],
+  "globalSettings": {
+    "logDir": "/root/supergateway-manager/logs",
+    "pidDir": "/root/supergateway-manager/pids",
+    "backupDir": "/root/supergateway-manager/backups",
+    "checkInterval": 30000,
+    "webPort": 3457,
+    "healthCheck": {
+      "enabled": true,
+      "defaultInterval": 10000
+    },
+    "email": {
+      "enabled": false,
+      "smtp": {
+        "host": "smtp.qq.com",
+        "port": 587,
+        "secure": false,
+        "auth": {
+          "user": "your-qq@qq.com",
+          "pass": "your-auth-code"
+        }
+      },
+      "to": "your-qq@qq.com",
+      "alertInterval": 14400000
+    },
+    "templates": {
+      "filesystem": {
+        "name": "filesystem",
+        "description": "文件系统访问",
+        "command": "npx",
+        "args": ["-y", "@modelcontextprotocol/server-filesystem", "/path/to/directory"],
+        "supergatewayArgs": {
+          "outputTransport": "sse",
+          "cors": true
+        }
+      },
+      "github": {
+        "name": "github",
+        "description": "GitHub API 访问",
+        "command": "npx",
+        "args": ["-y", "@modelcontextprotocol/server-github"],
+        "env": {
+          "GITHUB_PERSONAL_ACCESS_TOKEN": "your-token"
+        },
+        "supergatewayArgs": {
+          "outputTransport": "sse",
+          "cors": true
+        }
+      },
+      "fetch": {
+        "name": "fetch",
+        "description": "HTTP 请求",
+        "command": "npx",
+        "args": ["-y", "@modelcontextprotocol/server-fetch"],
+        "supergatewayArgs": {
+          "outputTransport": "streamableHttp",
+          "cors": true
+        }
+      },
+      "postgres": {
+        "name": "postgres",
+        "description": "PostgreSQL 数据库",
+        "command": "npx",
+        "args": ["-y", "@modelcontextprotocol/server-postgres", "postgresql://localhost/mydb"],
+        "supergatewayArgs": {
+          "outputTransport": "sse",
+          "cors": true
+        }
+      },
+      "sqlite": {
+        "name": "sqlite",
+        "description": "SQLite 数据库",
+        "command": "npx",
+        "args": ["-y", "@modelcontextprotocol/server-sqlite", "/path/to/database.db"],
+        "supergatewayArgs": {
+          "outputTransport": "sse",
+          "cors": true
+        }
+      }
+    }
+  }
+}

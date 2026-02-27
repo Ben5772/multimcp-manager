@@ -1,0 +1,25 @@
+{
+  "name": "supergateway-manager",
+  "version": "1.0.0",
+  "description": "Process manager for multiple supergateway instances",
+  "type": "module",
+  "main": "manager.js",
+  "scripts": {
+    "start": "node manager.js",
+    "web": "node web-server.js",
+    "dev": "nodemon manager.js"
+  },
+  "keywords": [
+    "supergateway",
+    "mcp",
+    "process-manager"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "node-cron": "^4.2.1",
+    "nodemailer": "^8.0.1"
+  }
+}

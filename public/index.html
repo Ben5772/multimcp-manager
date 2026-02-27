@@ -1,0 +1,1319 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supergateway Manager</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5; color: #333; line-height: 1.6;
+        }
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; padding: 30px; border-radius: 10px;
+            margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        header h1 { font-size: 2rem; margin-bottom: 10px; }
+        .tabs {
+            display: flex; gap: 10px; margin-bottom: 20px;
+            background: white; padding: 10px; border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .tab {
+            padding: 10px 20px; border: none; border-radius: 6px;
+            cursor: pointer; font-size: 14px; font-weight: 500;
+            background: #f3f4f6; transition: all 0.3s;
+        }
+        .tab:hover { background: #e5e7eb; }
+        .tab.active { background: #667eea; color: white; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        .actions {
+            display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;
+        }
+        .btn {
+            padding: 10px 20px; border: none; border-radius: 6px;
+            cursor: pointer; font-size: 14px; font-weight: 500;
+            transition: all 0.3s; display: inline-flex; align-items: center; gap: 6px;
+        }
+        .btn-primary { background: #667eea; color: white; }
+        .btn-primary:hover { background: #5568d3; }
+        .btn-success { background: #10b981; color: white; }
+        .btn-success:hover { background: #059669; }
+        .btn-danger { background: #ef4444; color: white; }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-secondary { background: #6b7280; color: white; }
+        .btn-secondary:hover { background: #4b5563; }
+        .btn-warning { background: #f59e0b; color: white; }
+        .btn-warning:hover { background: #d97706; }
+        .btn-info { background: #3b82f6; color: white; }
+        .btn-info:hover { background: #2563eb; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        .servers-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 20px;
+        }
+        .server-card {
+            background: white; border-radius: 10px; padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .server-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .server-card.selected { border: 2px solid #667eea; }
+        .server-header {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;
+        }
+        .server-name { font-size: 1.2rem; font-weight: 600; color: #1f2937; }
+        .server-type {
+            font-size: 11px; padding: 2px 8px; border-radius: 12px;
+            background: #e0e7ff; color: #4338ca;
+        }
+        .server-type.direct { background: #d1fae5; color: #065f46; }
+        .status-badge {
+            padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .status-running { background: #d1fae5; color: #065f46; }
+        .status-stopped { background: #f3f4f6; color: #6b7280; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+        .status-running .status-dot { animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        
+        .health-badge {
+            padding: 2px 8px; border-radius: 12px; font-size: 11px; margin-left: 8px;
+        }
+        .health-healthy { background: #d1fae5; color: #065f46; }
+        .health-unhealthy { background: #fee2e2; color: #991b1b; }
+        .health-unknown { background: #f3f4f6; color: #6b7280; }
+        
+        .server-info { margin-bottom: 15px; }
+        .info-row {
+            display: flex; justify-content: space-between; padding: 8px 0;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        .info-row:last-child { border-bottom: none; }
+        .info-label { color: #6b7280; font-size: 14px; }
+        .info-value { font-weight: 500; color: #374151; font-family: monospace; font-size: 13px; }
+        .server-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+        .server-actions .btn { flex: 1; min-width: 70px; justify-content: center; }
+        
+        .batch-bar {
+            background: white; padding: 15px; border-radius: 8px;
+            margin-bottom: 20px; display: none; align-items: center; gap: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .batch-bar.active { display: flex; }
+        .batch-info { flex: 1; }
+        
+        /* Modal */
+        .modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;
+        }
+        .modal.active { display: flex; }
+        .modal-content {
+            background: white; border-radius: 10px; width: 90%; max-width: 700px;
+            max-height: 90vh; display: flex; flex-direction: column; overflow: hidden;
+        }
+        .modal-header {
+            padding: 20px; border-bottom: 1px solid #e5e7eb;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .modal-body { padding: 20px; overflow-y: auto; flex: 1; }
+        .modal-footer { padding: 20px; border-top: 1px solid #e5e7eb; display: flex; gap: 10px; justify-content: flex-end; }
+        
+        /* Form */
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 500; color: #374151; }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px;
+            font-size: 14px; font-family: inherit;
+        }
+        .form-group textarea { min-height: 80px; resize: vertical; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .checkbox-group { display: flex; align-items: center; gap: 8px; }
+        .checkbox-group input { width: auto; }
+        
+        /* Template cards */
+        .templates-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px;
+            margin-bottom: 20px;
+        }
+        .template-card {
+            background: white; padding: 20px; border-radius: 10px;
+            border: 2px solid #e5e7eb; cursor: pointer; transition: all 0.3s;
+        }
+        .template-card:hover { border-color: #667eea; transform: translateY(-2px); }
+        .template-card h4 { margin-bottom: 8px; color: #1f2937; }
+        .template-card p { font-size: 13px; color: #6b7280; }
+        
+        /* Terminal */
+        .terminal-container {
+            background: #1f2937; border-radius: 10px; padding: 20px;
+            font-family: 'Courier New', monospace; color: #e5e7eb;
+        }
+        .terminal-output {
+            height: 400px; overflow-y: auto; margin-bottom: 15px;
+            white-space: pre-wrap; word-break: break-all;
+            background: #111827; padding: 15px; border-radius: 6px;
+        }
+        .terminal-input-row { display: flex; gap: 10px; }
+        .terminal-input {
+            flex: 1; background: #374151; border: none; padding: 12px;
+            color: #e5e7eb; font-family: inherit; border-radius: 6px;
+        }
+        .terminal-input:focus { outline: none; background: #4b5563; }
+        .terminal-prompt { color: #10b981; font-weight: bold; }
+        .terminal-error { color: #ef4444; }
+        .terminal-success { color: #10b981; }
+        
+        /* Settings */
+        .settings-section {
+            background: white; padding: 20px; border-radius: 10px;
+            margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .settings-section h3 { margin-bottom: 15px; color: #1f2937; }
+        
+        /* Backup list */
+        .backup-list {
+            max-height: 300px; overflow-y: auto;
+        }
+        .backup-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px; border-bottom: 1px solid #e5e7eb;
+        }
+        .backup-item:last-child { border-bottom: none; }
+        .backup-info { flex: 1; }
+        .backup-name { font-weight: 500; color: #1f2937; }
+        .backup-time { font-size: 12px; color: #6b7280; }
+        
+        /* Port status */
+        .port-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); gap: 8px;
+        }
+        .port-item {
+            padding: 8px; text-align: center; border-radius: 6px;
+            font-size: 12px; font-family: monospace; cursor: pointer;
+        }
+        .port-used { background: #fee2e2; color: #991b1b; }
+        .port-available { background: #d1fae5; color: #065f46; }
+        .port-selected { background: #667eea; color: white; }
+        
+        /* Toast */
+        .toast {
+            position: fixed; bottom: 20px; right: 20px; padding: 15px 20px;
+            border-radius: 8px; color: white; font-weight: 500;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            transform: translateX(150%); transition: transform 0.3s; z-index: 2000;
+        }
+        .toast.show { transform: translateX(0); }
+        .toast.success { background: #10b981; }
+        .toast.error { background: #ef4444; }
+        
+        .empty-state { text-align: center; padding: 60px 20px; color: #6b7280; }
+        .empty-state h3 { margin-bottom: 10px; color: #374151; }
+        
+        .section-title { font-size: 1.1rem; font-weight: 600; margin: 20px 0 10px; color: #374151; }
+        
+        .checkbox-wrapper {
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px; background: #f9fafb; border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔌 Supergateway Manager</h1>
+            <p>管理多个 MCP 服务器，支持 supergateway 代理和直接命令执行</p>
+        </header>
+        
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('servers', this)">服务器管理</button>
+            <button class="tab" onclick="switchTab('templates', this)">配置模板</button>
+            <button class="tab" onclick="switchTab('ports', this)">端口管理</button>
+            <button class="tab" onclick="switchTab('backups', this)">备份恢复</button>
+            <button class="tab" onclick="switchTab('settings', this)">系统设置</button>
+            <button class="tab" onclick="switchTab('terminal', this)">命令终端</button>
+        </div>
+        
+        <!-- Servers Tab -->
+        <div id="serversTab" class="tab-content active">
+            <div class="batch-bar" id="batchBar">
+                <div class="batch-info">
+                    已选择 <strong id="selectedCount">0</strong> 个服务器
+                </div>
+                <button class="btn btn-success" onclick="batchStart()">▶ 批量启动</button>
+                <button class="btn btn-danger" onclick="batchStop()">⏹ 批量停止</button>
+                <button class="btn btn-warning" onclick="batchRestart()">🔄 批量重启</button>
+                <button class="btn btn-secondary" onclick="clearSelection()">取消选择</button>
+            </div>
+            <div class="actions">
+                <button class="btn btn-success" onclick="startAll()">▶ 启动全部</button>
+                <button class="btn btn-danger" onclick="stopAll()">⏹ 停止全部</button>
+                <button class="btn btn-primary" onclick="showAddModal()">➕ 添加服务器</button>
+                <button class="btn btn-info" onclick="toggleBatchMode()">☑️ 批量选择</button>
+                <button class="btn btn-secondary" onclick="refreshStatus()">🔄 刷新</button>
+            </div>
+            <div class="servers-grid" id="serversGrid">
+                <div class="empty-state"><h3>加载中...</h3></div>
+            </div>
+        </div>
+        
+        <!-- Templates Tab -->
+        <div id="templatesTab" class="tab-content">
+            <h2 class="section-title">从模板创建服务器</h2>
+            <div class="templates-grid" id="templatesGrid">
+                <div class="empty-state"><h3>加载中...</h3></div>
+            </div>
+        </div>
+        
+        <!-- Ports Tab -->
+        <div id="portsTab" class="tab-content">
+            <div class="settings-section">
+                <h3>端口状态</h3>
+                <div style="margin-bottom: 15px;">
+                    <span style="display: inline-flex; align-items: center; gap: 5px; margin-right: 20px;">
+                        <span style="width: 20px; height: 20px; background: #fee2e2; border-radius: 4px;"></span>
+                        已占用
+                    </span>
+                    <span style="display: inline-flex; align-items: center; gap: 5px;">
+                        <span style="width: 20px; height: 20px; background: #d1fae5; border-radius: 4px;"></span>
+                        可用
+                    </span>
+                </div>
+                <div class="port-grid" id="portGrid"></div>
+            </div>
+            <div class="settings-section">
+                <h3>端口检测</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>检测端口</label>
+                        <input type="number" id="checkPortInput" placeholder="如: 8080">
+                    </div>
+                    <div class="form-group" style="display: flex; align-items: flex-end;">
+                        <button class="btn btn-primary" onclick="checkPort()">检测</button>
+                    </div>
+                </div>
+                <div id="portCheckResult"></div>
+            </div>
+            <div class="settings-section">
+                <h3>自动分配端口</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>起始端口</label>
+                        <input type="number" id="findPortInput" value="8000">
+                    </div>
+                    <div class="form-group" style="display: flex; align-items: flex-end;">
+                        <button class="btn btn-success" onclick="findAvailablePort()">查找可用端口</button>
+                    </div>
+                </div>
+                <div id="findPortResult"></div>
+            </div>
+        </div>
+        
+        <!-- Backups Tab -->
+        <div id="backupsTab" class="tab-content">
+            <div class="settings-section">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3>配置备份</h3>
+                    <button class="btn btn-primary" onclick="createBackup()">➕ 立即备份</button>
+                </div>
+                <p style="color: #6b7280; margin-bottom: 15px;">每小时自动备份，保留最近24个备份</p>
+                <div class="backup-list" id="backupList">
+                    <div class="empty-state">加载中...</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Settings Tab -->
+        <div id="settingsTab" class="tab-content">
+            <div class="settings-section">
+                <h3>邮件告警设置</h3>
+                <div class="form-group">
+                    <div class="checkbox-wrapper">
+                        <input type="checkbox" id="emailEnabled">
+                        <label for="emailEnabled" style="margin: 0;">启用邮件告警</label>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>SMTP 服务器</label>
+                        <input type="text" id="smtpHost" value="smtp.qq.com">
+                    </div>
+                    <div class="form-group">
+                        <label>SMTP 端口</label>
+                        <input type="number" id="smtpPort" value="587">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>发件邮箱</label>
+                        <input type="email" id="smtpUser" placeholder="your-qq@qq.com">
+                    </div>
+                    <div class="form-group">
+                        <label>授权码</label>
+                        <input type="password" id="smtpPass" placeholder="QQ邮箱授权码">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>收件邮箱</label>
+                    <input type="email" id="emailTo" placeholder="your-qq@qq.com">
+                </div>
+                <div class="form-group">
+                    <label>告警间隔 (毫秒)</label>
+                    <input type="number" id="alertInterval" value="14400000" placeholder="默认4小时">
+                    <small style="color: #6b7280;">默认 14400000 = 4小时</small>
+                </div>
+                <button class="btn btn-primary" onclick="saveEmailSettings()">保存设置</button>
+            </div>
+            
+            <div class="settings-section">
+                <h3>健康检查设置</h3>
+                <div class="form-group">
+                    <label>默认检测间隔 (毫秒)</label>
+                    <input type="number" id="healthInterval" value="10000">
+                    <small style="color: #6b7280;">默认 10000 = 10秒</small>
+                </div>
+                <button class="btn btn-primary" onclick="saveHealthSettings()">保存设置</button>
+            </div>
+        </div>
+        
+        <!-- Terminal Tab -->
+        <div id="terminalTab" class="tab-content">
+            <div class="terminal-container">
+                <div class="terminal-output" id="terminalOutput">
+                    <div class="terminal-success">Linux 命令终端已就绪</div>
+                    <div>输入命令并按 Enter 执行...</div>
+                </div>
+                <div class="terminal-input-row">
+                    <span class="terminal-prompt">$</span>
+                    <input type="text" class="terminal-input" id="terminalInput" 
+                           placeholder="输入命令..." onkeypress="handleTerminalKey(event)">
+                    <button class="btn btn-primary" onclick="executeCommand()">执行</button>
+                    <button class="btn btn-secondary" onclick="clearTerminal()">清除</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Edit/Add Modal -->
+    <div class="modal" id="editModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">编辑服务器</h3>
+                <button class="btn btn-secondary" onclick="closeModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <form id="serverForm">
+                    <input type="hidden" id="originalName">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>服务器名称 *</label>
+                            <input type="text" id="serverName" required placeholder="如: my-mcp-server">
+                        </div>
+                        <div class="form-group">
+                            <label>端口 *</label>
+                            <input type="number" id="serverPort" required placeholder="如: 9001">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>类型</label>
+                            <select id="serverType" onchange="toggleTypeFields()">
+                                <option value="supergateway">Supergateway (推荐)</option>
+                                <option value="direct">直接命令</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>自动重启</label>
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="autoRestart" checked>
+                                <label for="autoRestart">启用</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="section-title">命令配置</div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>命令</label>
+                            <input type="text" id="command" placeholder="如: npx">
+                        </div>
+                        <div class="form-group">
+                            <label>参数 (空格分隔)</label>
+                            <input type="text" id="args" placeholder="如: -y @modelcontextprotocol/server-fetch">
+                        </div>
+                    </div>
+                    
+                    <div id="supergatewayFields">
+                        <div class="section-title">Supergateway 配置</div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>输出传输协议</label>
+                                <select id="outputTransport">
+                                    <option value="sse">SSE</option>
+                                    <option value="streamableHttp">Streamable HTTP</option>
+                                    <option value="ws">WebSocket</option>
+                                    <option value="stdio">stdio</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>CORS</label>
+                                <div class="checkbox-group">
+                                    <input type="checkbox" id="cors" checked>
+                                    <label for="cors">启用</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>SSE 路径</label>
+                                <input type="text" id="ssePath" value="/sse" placeholder="/sse">
+                            </div>
+                            <div class="form-group">
+                                <label>Message 路径</label>
+                                <input type="text" id="messagePath" value="/message" placeholder="/message">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Streamable HTTP 路径</label>
+                            <input type="text" id="streamableHttpPath" value="/mcp" placeholder="/mcp">
+                        </div>
+                    </div>
+                    
+                    <div class="section-title">健康检查配置</div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <div class="checkbox-wrapper">
+                                <input type="checkbox" id="healthEnabled" checked>
+                                <label for="healthEnabled" style="margin: 0;">启用健康检查</label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>检测间隔 (毫秒)</label>
+                            <input type="number" id="healthInterval" value="10000">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>检测端点</label>
+                            <input type="text" id="healthEndpoint" value="/sse" placeholder="/sse">
+                        </div>
+                        <div class="form-group">
+                            <label>超时时间 (毫秒)</label>
+                            <input type="number" id="healthTimeout" value="5000">
+                        </div>
+                    </div>
+                    
+                    <div class="section-title">环境变量</div>
+                    <div class="form-group">
+                        <label>环境变量 (JSON格式)</label>
+                        <textarea id="envVars" placeholder='{"KEY": "value", "API_KEY": "xxx"}'></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-danger" id="deleteBtn" onclick="deleteServer()" style="margin-right: auto;">删除</button>
+                <button class="btn btn-secondary" onclick="closeModal()">取消</button>
+                <button class="btn btn-primary" onclick="saveServer()">保存</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Template Create Modal -->
+    <div class="modal" id="templateModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>从模板创建</h3>
+                <button class="btn btn-secondary" onclick="closeTemplateModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="templateName">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>服务器名称 *</label>
+                        <input type="text" id="templateServerName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>端口 *</label>
+                        <input type="number" id="templateServerPort" required>
+                    </div>
+                </div>
+                <div id="templateCustomFields"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeTemplateModal()">取消</button>
+                <button class="btn btn-primary" onclick="createFromTemplate()">创建</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Logs Modal -->
+    <div class="modal" id="logsModal">
+        <div class="modal-content" style="max-width: 900px;">
+            <div class="modal-header">
+                <h3>📋 日志: <span id="logsServerName"></span></h3>
+                <button class="btn btn-secondary" onclick="closeLogs()">关闭</button>
+            </div>
+            <div class="modal-body">
+                <div class="terminal-output" id="logsBody" style="height: 500px;">加载中...</div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="refreshLogs()">刷新</button>
+                <button class="btn btn-primary" onclick="closeLogs()">关闭</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="toast" id="toast"></div>
+    
+    <script>
+        let servers = [];
+        let templates = {};
+        let selectedServers = new Set();
+        let batchMode = false;
+        let currentLogsServer = null;
+        let refreshInterval;
+        
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast ${type} show`;
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+        
+        async function fetchAPI(url, options = {}) {
+            try {
+                const response = await fetch(url, options);
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
+                return data;
+            } catch (error) {
+                showToast(error.message, 'error');
+                throw error;
+            }
+        }
+        
+        function switchTab(tab, btn) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById(tab + 'Tab').classList.add('active');
+            
+            // Load tab-specific data
+            if (tab === 'templates') loadTemplates();
+            if (tab === 'ports') loadPorts();
+            if (tab === 'backups') loadBackups();
+            if (tab === 'settings') loadSettings();
+        }
+        
+        // Servers
+        async function loadServers() {
+            try {
+                const data = await fetchAPI('/api/servers');
+                servers = data;
+                renderServers();
+            } catch (error) {
+                console.error('Failed to load servers:', error);
+            }
+        }
+        
+        function renderServers() {
+            const grid = document.getElementById('serversGrid');
+            if (servers.length === 0) {
+                grid.innerHTML = `<div class="empty-state"><h3>暂无服务器</h3><p>点击"添加服务器"创建</p></div>`;
+                return;
+            }
+            
+            grid.innerHTML = servers.map(server => {
+                const isSelected = selectedServers.has(server.name);
+                const health = server.health;
+                let healthBadge = '';
+                if (health) {
+                    const healthClass = health.healthy ? 'health-healthy' : 'health-unhealthy';
+                    const healthText = health.healthy ? '健康' : '异常';
+                    healthBadge = `<span class="health-badge ${healthClass}">${healthText}</span>`;
+                }
+                
+                return `
+                <div class="server-card ${isSelected ? 'selected' : ''}" data-name="${server.name}" onclick="toggleSelect('${server.name}')">
+                    <div class="server-header">
+                        <div>
+                            <span class="server-name">${server.name}</span>
+                            ${healthBadge}
+                            <span class="server-type ${server.type || 'supergateway'}">${server.type === 'direct' ? '直接命令' : 'Supergateway'}</span>
+                        </div>
+                        <span class="status-badge ${server.running ? 'status-running' : 'status-stopped'}">
+                            <span class="status-dot"></span>
+                            ${server.running ? '运行中' : '已停止'}
+                        </span>
+                    </div>
+                    <div class="server-info">
+                        <div class="info-row">
+                            <span class="info-label">端口</span>
+                            <span class="info-value">${server.port}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">命令</span>
+                            <span class="info-value">${server.command} ${(server.args || []).join(' ').substring(0, 30)}${(server.args || []).join(' ').length > 30 ? '...' : ''}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">PID</span>
+                            <span class="info-value">${server.pid || '-'}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">传输协议</span>
+                            <span class="info-value">${server.transport || (server.type === 'direct' ? 'stdio' : 'sse')}</span>
+                        </div>
+                        ${health ? `
+                        <div class="info-row">
+                            <span class="info-label">最后检测</span>
+                            <span class="info-value">${new Date(health.lastCheck).toLocaleTimeString()}</span>
+                        </div>
+                        ` : ''}
+                    </div>
+                    <div class="server-actions" onclick="event.stopPropagation()">
+                        <button class="btn btn-success" onclick="startServer('${server.name}')" ${server.running ? 'disabled' : ''}>▶ 启动</button>
+                        <button class="btn btn-danger" onclick="stopServer('${server.name}')" ${!server.running ? 'disabled' : ''}>⏹ 停止</button>
+                        <button class="btn btn-warning" onclick="restartServer('${server.name}')">🔄 重启</button>
+                        <button class="btn btn-secondary" onclick="viewLogs('${server.name}')">📋 日志</button>
+                        <button class="btn btn-primary" onclick="editServer('${server.name}')">⚙️ 配置</button>
+                    </div>
+                </div>
+            `}).join('');
+        }
+        
+        // Batch operations
+        function toggleBatchMode() {
+            batchMode = !batchMode;
+            selectedServers.clear();
+            updateBatchBar();
+            renderServers();
+            showToast(batchMode ? '批量选择模式已开启' : '批量选择模式已关闭');
+        }
+        
+        function toggleSelect(name) {
+            if (!batchMode) return;
+            if (selectedServers.has(name)) {
+                selectedServers.delete(name);
+            } else {
+                selectedServers.add(name);
+            }
+            updateBatchBar();
+            renderServers();
+        }
+        
+        function updateBatchBar() {
+            const bar = document.getElementById('batchBar');
+            const count = document.getElementById('selectedCount');
+            if (batchMode && selectedServers.size > 0) {
+                bar.classList.add('active');
+                count.textContent = selectedServers.size;
+            } else {
+                bar.classList.remove('active');
+            }
+        }
+        
+        function clearSelection() {
+            selectedServers.clear();
+            updateBatchBar();
+            renderServers();
+        }
+        
+        async function batchStart() {
+            await fetchAPI('/api/batch', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ operation: 'start', servers: Array.from(selectedServers) })
+            });
+            showToast('批量启动完成');
+            clearSelection();
+            await loadServers();
+        }
+        
+        async function batchStop() {
+            await fetchAPI('/api/batch', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ operation: 'stop', servers: Array.from(selectedServers) })
+            });
+            showToast('批量停止完成');
+            clearSelection();
+            await loadServers();
+        }
+        
+        async function batchRestart() {
+            await fetchAPI('/api/batch', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ operation: 'restart', servers: Array.from(selectedServers) })
+            });
+            showToast('批量重启完成');
+            clearSelection();
+            await loadServers();
+        }
+        
+        async function startServer(name) {
+            await fetchAPI(`/api/servers/${name}/start`, { method: 'POST' });
+            showToast(`服务器 ${name} 已启动`);
+            await loadServers();
+        }
+        
+        async function stopServer(name) {
+            await fetchAPI(`/api/servers/${name}/stop`, { method: 'POST' });
+            showToast(`服务器 ${name} 已停止`);
+            await loadServers();
+        }
+        
+        async function restartServer(name) {
+            await fetchAPI(`/api/servers/${name}/restart`, { method: 'POST' });
+            showToast(`服务器 ${name} 已重启`);
+            await loadServers();
+        }
+        
+        async function startAll() {
+            await fetchAPI('/api/start-all', { method: 'POST' });
+            showToast('所有启用的服务器已启动');
+            await loadServers();
+        }
+        
+        async function stopAll() {
+            if (!confirm('确定要停止所有服务器吗？')) return;
+            await fetchAPI('/api/stop-all', { method: 'POST' });
+            showToast('所有服务器已停止');
+            await loadServers();
+        }
+        
+        async function refreshStatus() {
+            await loadServers();
+            showToast('状态已刷新');
+        }
+        
+        // Templates
+        async function loadTemplates() {
+            try {
+                const data = await fetchAPI('/api/templates');
+                templates = data.templates;
+                renderTemplates();
+            } catch (error) {
+                console.error('Failed to load templates:', error);
+            }
+        }
+        
+        function renderTemplates() {
+            const grid = document.getElementById('templatesGrid');
+            const templateList = Object.entries(templates);
+            
+            if (templateList.length === 0) {
+                grid.innerHTML = `<div class="empty-state"><h3>暂无模板</h3></div>`;
+                return;
+            }
+            
+            grid.innerHTML = templateList.map(([key, template]) => `
+                <div class="template-card" onclick="showTemplateModal('${key}')">
+                    <h4>${template.name}</h4>
+                    <p>${template.description || ''}</p>
+                    <small style="color: #6b7280;">${template.command} ${(template.args || []).join(' ').substring(0, 40)}...</small>
+                </div>
+            `).join('');
+        }
+        
+        function showTemplateModal(templateKey) {
+            const template = templates[templateKey];
+            if (!template) return;
+            
+            document.getElementById('templateName').value = templateKey;
+            document.getElementById('templateServerName').value = template.name;
+            document.getElementById('templateServerPort').value = '';
+            
+            // Show custom fields based on template
+            const customFields = document.getElementById('templateCustomFields');
+            if (templateKey === 'filesystem') {
+                customFields.innerHTML = `
+                    <div class="form-group">
+                        <label>目录路径 *</label>
+                        <input type="text" id="templatePath" placeholder="/path/to/directory" required>
+                    </div>
+                `;
+            } else if (templateKey === 'github') {
+                customFields.innerHTML = `
+                    <div class="form-group">
+                        <label>GitHub Token</label>
+                        <input type="text" id="templateToken" placeholder="ghp_xxxxxxxx">
+                    </div>
+                `;
+            } else if (templateKey === 'postgres') {
+                customFields.innerHTML = `
+                    <div class="form-group">
+                        <label>数据库连接字符串 *</label>
+                        <input type="text" id="templateDbUrl" placeholder="postgresql://user:pass@localhost/db" required>
+                    </div>
+                `;
+            } else if (templateKey === 'sqlite') {
+                customFields.innerHTML = `
+                    <div class="form-group">
+                        <label>数据库文件路径 *</label>
+                        <input type="text" id="templateDbPath" placeholder="/path/to/database.db" required>
+                    </div>
+                `;
+            } else {
+                customFields.innerHTML = '';
+            }
+            
+            document.getElementById('templateModal').classList.add('active');
+        }
+        
+        function closeTemplateModal() {
+            document.getElementById('templateModal').classList.remove('active');
+        }
+        
+        async function createFromTemplate() {
+            const templateKey = document.getElementById('templateName').value;
+            const name = document.getElementById('templateServerName').value;
+            const port = parseInt(document.getElementById('templateServerPort').value);
+            
+            if (!name || !port) {
+                showToast('名称和端口为必填项', 'error');
+                return;
+            }
+            
+            const customConfig = { name, port };
+            
+            // Add custom fields
+            const templatePath = document.getElementById('templatePath');
+            if (templatePath) customConfig.path = templatePath.value;
+            
+            const templateToken = document.getElementById('templateToken');
+            if (templateToken && templateToken.value) {
+                customConfig.env = { GITHUB_PERSONAL_ACCESS_TOKEN: templateToken.value };
+            }
+            
+            const templateDbUrl = document.getElementById('templateDbUrl');
+            if (templateDbUrl) customConfig.dbUrl = templateDbUrl.value;
+            
+            const templateDbPath = document.getElementById('templateDbPath');
+            if (templateDbPath) customConfig.dbPath = templateDbPath.value;
+            
+            try {
+                await fetchAPI(`/api/templates/${templateKey}/create`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(customConfig)
+                });
+                showToast('服务器已创建');
+                closeTemplateModal();
+                await loadServers();
+                switchTab('servers', document.querySelector('.tab'));
+            } catch (error) {
+                console.error('Create from template failed:', error);
+            }
+        }
+        
+        // Ports
+        async function loadPorts() {
+            try {
+                const data = await fetchAPI('/api/ports');
+                renderPorts(data.used, data.available);
+            } catch (error) {
+                console.error('Failed to load ports:', error);
+            }
+        }
+        
+        function renderPorts(used, available) {
+            const grid = document.getElementById('portGrid');
+            const allPorts = [];
+            
+            for (let p = 8000; p < 8100; p++) {
+                allPorts.push({ port: p, used: used.includes(p) });
+            }
+            
+            grid.innerHTML = allPorts.map(p => `
+                <div class="port-item ${p.used ? 'port-used' : 'port-available'}">${p.port}</div>
+            `).join('');
+        }
+        
+        async function checkPort() {
+            const port = document.getElementById('checkPortInput').value;
+            if (!port) return;
+            
+            try {
+                const data = await fetchAPI('/api/ports/check', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ port: parseInt(port) })
+                });
+                
+                const result = document.getElementById('portCheckResult');
+                result.innerHTML = data.available 
+                    ? `<div style="color: #10b981; margin-top: 10px;">✅ 端口 ${port} 可用</div>`
+                    : `<div style="color: #ef4444; margin-top: 10px;">❌ 端口 ${port} 已被占用</div>`;
+            } catch (error) {
+                console.error('Port check failed:', error);
+            }
+        }
+        
+        async function findAvailablePort() {
+            const startPort = parseInt(document.getElementById('findPortInput').value) || 8000;
+            
+            try {
+                const data = await fetchAPI('/api/ports/find', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ startPort })
+                });
+                
+                const result = document.getElementById('findPortResult');
+                result.innerHTML = `<div style="color: #10b981; margin-top: 10px;">✅ 找到可用端口: ${data.port}</div>`;
+            } catch (error) {
+                document.getElementById('findPortResult').innerHTML = 
+                    `<div style="color: #ef4444; margin-top: 10px;">❌ 未找到可用端口</div>`;
+            }
+        }
+        
+        // Backups
+        async function loadBackups() {
+            try {
+                const data = await fetchAPI('/api/backups');
+                renderBackups(data.backups);
+            } catch (error) {
+                console.error('Failed to load backups:', error);
+            }
+        }
+        
+        function renderBackups(backups) {
+            const list = document.getElementById('backupList');
+            if (backups.length === 0) {
+                list.innerHTML = `<div class="empty-state"><h3>暂无备份</h3></div>`;
+                return;
+            }
+            
+            list.innerHTML = backups.map(b => `
+                <div class="backup-item">
+                    <div class="backup-info">
+                        <div class="backup-name">${b.name}</div>
+                        <div class="backup-time">${new Date(b.time).toLocaleString()} (${Math.round(b.size / 1024)}KB)</div>
+                    </div>
+                    <button class="btn btn-primary" onclick="restoreBackup('${b.name}')">恢复</button>
+                </div>
+            `).join('');
+        }
+        
+        async function createBackup() {
+            try {
+                await fetchAPI('/api/backups/create', { method: 'POST' });
+                showToast('备份已创建');
+                await loadBackups();
+            } catch (error) {
+                console.error('Backup failed:', error);
+            }
+        }
+        
+        async function restoreBackup(name) {
+            if (!confirm(`确定要恢复到备份 "${name}" 吗？当前配置将被覆盖。`)) return;
+            
+            try {
+                await fetchAPI('/api/backups/restore', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name })
+                });
+                showToast('配置已恢复');
+                await loadServers();
+            } catch (error) {
+                console.error('Restore failed:', error);
+            }
+        }
+        
+        // Settings
+        async function loadSettings() {
+            try {
+                const data = await fetchAPI('/api/settings');
+                if (data.settings.healthCheck) {
+                    document.getElementById('healthInterval').value = data.settings.healthCheck.defaultInterval || 10000;
+                }
+            } catch (error) {
+                console.error('Failed to load settings:', error);
+            }
+        }
+        
+        async function saveEmailSettings() {
+            const settings = {
+                enabled: document.getElementById('emailEnabled').checked,
+                smtp: {
+                    host: document.getElementById('smtpHost').value,
+                    port: parseInt(document.getElementById('smtpPort').value),
+                    secure: false,
+                    auth: {
+                        user: document.getElementById('smtpUser').value,
+                        pass: document.getElementById('smtpPass').value
+                    }
+                },
+                to: document.getElementById('emailTo').value,
+                alertInterval: parseInt(document.getElementById('alertInterval').value)
+            };
+            
+            try {
+                await fetchAPI('/api/settings/email', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(settings)
+                });
+                showToast('邮件设置已保存');
+            } catch (error) {
+                console.error('Save email settings failed:', error);
+            }
+        }
+        
+        async function saveHealthSettings() {
+            const settings = {
+                defaultInterval: parseInt(document.getElementById('healthInterval').value)
+            };
+            
+            try {
+                await fetchAPI('/api/settings/health', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(settings)
+                });
+                showToast('健康检查设置已保存');
+            } catch (error) {
+                console.error('Save health settings failed:', error);
+            }
+        }
+        
+        // Modal functions
+        function showAddModal() {
+            document.getElementById('modalTitle').textContent = '添加服务器';
+            document.getElementById('serverForm').reset();
+            document.getElementById('originalName').value = '';
+            document.getElementById('deleteBtn').style.display = 'none';
+            document.getElementById('supergatewayFields').style.display = 'block';
+            toggleTypeFields();
+            document.getElementById('editModal').classList.add('active');
+        }
+        
+        function editServer(name) {
+            const server = servers.find(s => s.name === name);
+            if (!server) return;
+            
+            document.getElementById('modalTitle').textContent = '编辑服务器';
+            document.getElementById('originalName').value = server.name;
+            document.getElementById('serverName').value = server.name;
+            document.getElementById('serverPort').value = server.port;
+            document.getElementById('serverType').value = server.type || 'supergateway';
+            document.getElementById('autoRestart').checked = server.autoRestart !== false;
+            document.getElementById('command').value = server.command || '';
+            document.getElementById('args').value = (server.args || []).join(' ');
+            document.getElementById('envVars').value = JSON.stringify(server.env || {}, null, 2);
+            
+            // Supergateway fields
+            const sgArgs = server.supergatewayArgs || {};
+            document.getElementById('outputTransport').value = sgArgs.outputTransport || 'sse';
+            document.getElementById('cors').checked = sgArgs.cors !== false;
+            document.getElementById('ssePath').value = sgArgs.ssePath || '/sse';
+            document.getElementById('messagePath').value = sgArgs.messagePath || '/message';
+            document.getElementById('streamableHttpPath').value = sgArgs.streamableHttpPath || '/mcp';
+            
+            // Health check fields
+            const hc = server.healthCheck || {};
+            document.getElementById('healthEnabled').checked = hc.enabled !== false;
+            document.getElementById('healthInterval').value = hc.interval || 10000;
+            document.getElementById('healthEndpoint').value = hc.endpoint || '/sse';
+            document.getElementById('healthTimeout').value = hc.timeout || 5000;
+            
+            document.getElementById('deleteBtn').style.display = 'block';
+            toggleTypeFields();
+            document.getElementById('editModal').classList.add('active');
+        }
+        
+        function toggleTypeFields() {
+            const type = document.getElementById('serverType').value;
+            document.getElementById('supergatewayFields').style.display = 
+                type === 'supergateway' ? 'block' : 'none';
+        }
+        
+        function closeModal() {
+            document.getElementById('editModal').classList.remove('active');
+        }
+        
+        async function saveServer() {
+            const originalName = document.getElementById('originalName').value;
+            const name = document.getElementById('serverName').value;
+            const port = parseInt(document.getElementById('serverPort').value);
+            
+            if (!name || !port) {
+                showToast('名称和端口为必填项', 'error');
+                return;
+            }
+            
+            const serverData = {
+                name,
+                port,
+                type: document.getElementById('serverType').value,
+                enabled: false,
+                command: document.getElementById('command').value || 'npx',
+                args: document.getElementById('args').value.split(' ').filter(a => a),
+                autoRestart: document.getElementById('autoRestart').checked,
+                env: JSON.parse(document.getElementById('envVars').value || '{}'),
+                maxRestarts: 3,
+                healthCheck: {
+                    enabled: document.getElementById('healthEnabled').checked,
+                    interval: parseInt(document.getElementById('healthInterval').value),
+                    endpoint: document.getElementById('healthEndpoint').value,
+                    timeout: parseInt(document.getElementById('healthTimeout').value)
+                }
+            };
+            
+            if (serverData.type === 'supergateway') {
+                serverData.supergatewayArgs = {
+                    stdio: true,
+                    outputTransport: document.getElementById('outputTransport').value,
+                    port: port,
+                    cors: document.getElementById('cors').checked,
+                    ssePath: document.getElementById('ssePath').value,
+                    messagePath: document.getElementById('messagePath').value,
+                    streamableHttpPath: document.getElementById('streamableHttpPath').value
+                };
+            }
+            
+            try {
+                if (originalName) {
+                    await fetchAPI(`/api/servers/${originalName}/config`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(serverData)
+                    });
+                    showToast('服务器配置已更新');
+                } else {
+                    await fetchAPI('/api/servers', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(serverData)
+                    });
+                    showToast('服务器已创建');
+                }
+                closeModal();
+                await loadServers();
+            } catch (error) {
+                console.error('Save failed:', error);
+            }
+        }
+        
+        async function deleteServer() {
+            const name = document.getElementById('originalName').value;
+            if (!confirm(`确定要删除服务器 "${name}" 吗？`)) return;
+            
+            try {
+                await fetchAPI(`/api/servers/${name}`, { method: 'DELETE' });
+                showToast('服务器已删除');
+                closeModal();
+                await loadServers();
+            } catch (error) {
+                console.error('Delete failed:', error);
+            }
+        }
+        
+        // Logs
+        async function viewLogs(name) {
+            currentLogsServer = name;
+            document.getElementById('logsServerName').textContent = name;
+            document.getElementById('logsBody').textContent = '加载中...';
+            document.getElementById('logsModal').classList.add('active');
+            await refreshLogs();
+        }
+        
+        async function refreshLogs() {
+            if (!currentLogsServer) return;
+            try {
+                const data = await fetchAPI(`/api/servers/${currentLogsServer}/logs?lines=100`);
+                document.getElementById('logsBody').textContent = data.logs || '暂无日志';
+            } catch (error) {
+                document.getElementById('logsBody').textContent = '加载日志失败';
+            }
+        }
+        
+        function closeLogs() {
+            document.getElementById('logsModal').classList.remove('active');
+            currentLogsServer = null;
+        }
+        
+        // Terminal
+        async function executeCommand() {
+            const input = document.getElementById('terminalInput');
+            const output = document.getElementById('terminalOutput');
+            const command = input.value.trim();
+            
+            if (!command) return;
+            
+            output.innerHTML += `\n<span class="terminal-prompt">$</span> ${escapeHtml(command)}`;
+            input.value = '';
+            
+            try {
+                const result = await fetchAPI('/api/execute', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ command, timeout: 60000 })
+                });
+                
+                if (result.stdout) output.innerHTML += '\n' + escapeHtml(result.stdout);
+                if (result.stderr) output.innerHTML += '\n<span class="terminal-error">' + escapeHtml(result.stderr) + '</span>';
+                if (result.error) output.innerHTML += '\n<span class="terminal-error">Error: ' + escapeHtml(result.error) + '</span>';
+            } catch (error) {
+                output.innerHTML += '\n<span class="terminal-error">执行失败</span>';
+            }
+            
+            output.scrollTop = output.scrollHeight;
+        }
+        
+        function handleTerminalKey(event) {
+            if (event.key === 'Enter') executeCommand();
+        }
+        
+        function clearTerminal() {
+            document.getElementById('terminalOutput').innerHTML = '<div class="terminal-success">终端已清除</div>';
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // Auto refresh
+        function startAutoRefresh() {
+            refreshInterval = setInterval(loadServers, 5000);
+        }
+        
+        function stopAutoRefresh() {
+            clearInterval(refreshInterval);
+        }
+        
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            loadServers();
+            startAutoRefresh();
+        });
+        
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) stopAutoRefresh();
+            else { loadServers(); startAutoRefresh(); }
+        });
+        
+        // Close modals on outside click
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    if (modal.id === 'editModal') closeModal();
+                    if (modal.id === 'logsModal') closeLogs();
+                    if (modal.id === 'templateModal') closeTemplateModal();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
