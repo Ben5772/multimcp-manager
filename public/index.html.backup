@@ -54,7 +54,6 @@
         .btn-info { background: #3b82f6; color: white; }
         .btn-info:hover { background: #2563eb; }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .btn-sm { padding: 5px 10px; font-size: 12px; }
         
         .servers-grid {
             display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 20px;
@@ -149,7 +148,6 @@
             border: 2px solid #e5e7eb; cursor: pointer; transition: all 0.3s;
         }
         .template-card:hover { border-color: #667eea; transform: translateY(-2px); }
-        .template-card.selected { border-color: #3b82f6; background: #eff6ff; }
         .template-card h4 { margin-bottom: 8px; color: #1f2937; }
         .template-card p { font-size: 13px; color: #6b7280; }
         
@@ -172,7 +170,6 @@
         .terminal-prompt { color: #10b981; font-weight: bold; }
         .terminal-error { color: #ef4444; }
         .terminal-success { color: #10b981; }
-        .terminal-log { color: #ffffff; }
         
         /* Settings */
         .settings-section {
@@ -246,14 +243,6 @@
         
         <!-- Servers Tab -->
         <div id="serversTab" class="tab-content active">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding: 10px; background: #f3f4f6; border-radius: 8px;">
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <span id="sshStatusBadge" style="padding: 5px 12px; background: #fee2e2; color: #991b1b; border-radius: 6px; font-size: 13px; font-weight: 500;">❌ 未连接宿主机</span>
-                    <span id="sshHostBadge" style="font-size: 13px; color: #6b7280;"></span>
-                </div>
-                <button class="btn btn-secondary" onclick="disconnectSSH()" id="disconnectSshBtn" style="display: none;">🔌 断开连接</button>
-            </div>
-            
             <div class="batch-bar" id="batchBar">
                 <div class="batch-info">
                     已选择 <strong id="selectedCount">0</strong> 个服务器
@@ -261,7 +250,6 @@
                 <button class="btn btn-success" onclick="batchStart()">▶ 批量启动</button>
                 <button class="btn btn-danger" onclick="batchStop()">⏹ 批量停止</button>
                 <button class="btn btn-warning" onclick="batchRestart()">🔄 批量重启</button>
-                <button class="btn btn-secondary" onclick="batchDelete()">🗑️ 批量删除</button>
                 <button class="btn btn-secondary" onclick="clearSelection()">取消选择</button>
             </div>
             <div class="actions">
@@ -278,19 +266,11 @@
         
         <!-- Templates Tab -->
         <div id="templatesTab" class="tab-content">
-            <div class="batch-bar" id="templateBatchBar" style="display: none;">
-                <div class="batch-info">
-                    已选择 <strong id="selectedTemplateCount">0</strong> 个模板
-                </div>
-                <button class="btn btn-danger" onclick="batchDeleteTemplates()">🗑️ 批量删除</button>
-                <button class="btn btn-secondary" onclick="clearTemplateSelection()">取消选择</button>
-            </div>
             <div class="actions" style="margin-bottom: 15px;">
                 <button class="btn btn-primary" onclick="showAddTemplateModal()">➕ 添加模板</button>
                 <button class="btn btn-success" onclick="exportTemplates()">📤 导出模板</button>
                 <button class="btn btn-info" onclick="document.getElementById('importFile').click()">📥 导入模板</button>
                 <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importTemplates(event)">
-                <button class="btn btn-secondary" onclick="toggleTemplateBatchMode()" style="margin-left: 10px;">☑️ 批量选择</button>
             </div>
             <h2 class="section-title">从模板创建服务器</h2>
             <div class="templates-grid" id="templatesGrid">
@@ -403,49 +383,9 @@
                 <div class="form-group">
                     <label>默认检测间隔 (毫秒)</label>
                     <input type="number" id="healthInterval" value="10000">
-                    <small style="color: #6b7280;">默认 10000 = 10 秒</small>
+                    <small style="color: #6b7280;">默认 10000 = 10秒</small>
                 </div>
                 <button class="btn btn-primary" onclick="saveHealthSettings()">保存设置</button>
-            </div>
-                    
-            <div class="settings-section">
-                <h3>🔐 SSH 宿主机配置</h3>
-                <p style="color: #6b7280; margin-bottom: 15px;">配置后页面加载时自动连接，用于服务器管理和命令终端</p>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>启用 SSH 连接</label>
-                        <div class="checkbox-group">
-                            <input type="checkbox" id="sshEnabled" checked>
-                            <label for="sshEnabled">启用</label>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label>自动连接</label>
-                        <div class="checkbox-group">
-                            <input type="checkbox" id="sshAutoConnect" checked>
-                            <label for="sshAutoConnect">页面加载时自动连接</label>
-                        </div>
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>宿主机 IP *</label>
-                        <input type="text" id="sshConfigHost" placeholder="如：192.168.1.100">
-                    </div>
-                    <div class="form-group">
-                        <label>用户名 *</label>
-                        <input type="text" id="sshConfigUser" value="root">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label>密码 *</label>
-                    <input type="password" id="sshConfigPass" placeholder="宿主机密码">
-                </div>
-                <div style="display: flex; gap: 10px; margin-top: 15px;">
-                    <button class="btn btn-primary" onclick="saveSSHConfigFromSettings()">💾 保存配置</button>
-                    <button class="btn btn-success" onclick="testSSHConnection()">🔌 测试连接</button>
-                    <button class="btn btn-danger" onclick="deleteSSHConfigFromSettings()">🗑️ 清除配置</button>
-                </div>
             </div>
         </div>
         
@@ -454,10 +394,10 @@
             <div class="terminal-container">
                 <div class="terminal-output" id="terminalOutput">
                     <div class="terminal-success">Linux 命令终端已就绪</div>
-                    <div>输入命令并按 Enter 执行，SSH 会话自动同步...</div>
+                    <div>输入命令并按 Enter 执行...</div>
                 </div>
                 <div class="terminal-input-row">
-                    <span class="terminal-prompt" id="terminalPrompt">$</span>
+                    <span class="terminal-prompt">$</span>
                     <input type="text" class="terminal-input" id="terminalInput" 
                            placeholder="输入命令..." onkeypress="handleTerminalKey(event)">
                     <button class="btn btn-primary" onclick="executeCommand()">执行</button>
@@ -620,86 +560,6 @@
         </div>
     </div>
     
-    <!-- Edit Template Modal -->
-    <div class="modal" id="editTemplateModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>✏️ 编辑模板</h3>
-                <button class="btn btn-secondary" onclick="closeEditTemplateModal()">✕</button>
-            </div>
-            <div class="modal-body">
-                <input type="hidden" id="editTemplateKey">
-                <div class="form-group">
-                    <label>模板类型 *</label>
-                    <select id="editTemplateType" onchange="toggleTemplateTypeFields()" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px;">
-                        <option value="supergateway">Supergateway 形式</option>
-                        <option value="custom">自定义形式</option>
-                    </select>
-                </div>
-                    
-                <!-- Supergateway 类型字段 -->
-                <div id="editTemplateSgFields">
-                    <div class="form-group">
-                        <label>模板名称 *</label>
-                        <input type="text" id="editTemplateName" required>
-                    </div>
-                    <div class="form-group">
-                        <label>描述</label>
-                        <input type="text" id="editTemplateDesc" placeholder="模板描述">
-                    </div>
-                    <div class="form-group">
-                        <label>命令 *</label>
-                        <input type="text" id="editTemplateCommand" placeholder="npx" required>
-                    </div>
-                    <div class="form-group">
-                        <label>参数 (JSON 数组)</label>
-                        <textarea id="editTemplateArgs" rows="3" placeholder='["-y", "package-name"]'></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label>环境变量 (JSON 对象)</label>
-                        <textarea id="editTemplateEnv" rows="3" placeholder='{"KEY": "value"}'></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label>Supergateway 参数 (JSON)</label>
-                        <textarea id="editTemplateSupergateway" rows="4" placeholder='{"outputTransport": "sse", "cors": true}'></textarea>
-                    </div>
-                </div>
-                    
-                <!-- 自定义类型字段 -->
-                <div id="editTemplateCustomFields" style="display: none;">
-                    <div class="form-group">
-                        <label>模板名称 *</label>
-                        <input type="text" id="editTemplateNameCustom" required>
-                    </div>
-                    <div class="form-group">
-                        <label>描述</label>
-                        <input type="text" id="editTemplateDescCustom" placeholder="模板描述">
-                    </div>
-                    <div class="form-group">
-                        <label>开启命令 *</label>
-                        <input type="text" id="editTemplateStartCommand" placeholder="./start.sh" required>
-                    </div>
-                    <div class="form-group">
-                        <label>停止命令</label>
-                        <input type="text" id="editTemplateStopCommand" placeholder="./stop.sh">
-                    </div>
-                    <div class="form-group">
-                        <label>端口</label>
-                        <input type="number" id="editTemplatePort" placeholder="8080">
-                    </div>
-                    <div class="form-group">
-                        <label>环境变量 (JSON 对象)</label>
-                        <textarea id="editTemplateEnvCustom" rows="3" placeholder='{"KEY": "value"}'></textarea>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeEditTemplateModal()">取消</button>
-                <button class="btn btn-primary" onclick="saveTemplate()">保存</button>
-            </div>
-        </div>
-    </div>
-    
     <!-- Logs Modal -->
     <div class="modal" id="logsModal">
         <div class="modal-content" style="max-width: 900px;">
@@ -737,384 +597,19 @@
     
     <div class="toast" id="toast"></div>
     
-    <!-- SSH Connection Modal -->
-    <div class="modal" id="sshConnectModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>🔐 连接宿主机</h3>
-            </div>
-            <div class="modal-body">
-                <p style="margin-bottom: 15px; color: #6b7280;">需要连接宿主机以获取 root 权限，用于执行服务器停止命令</p>
-                <div class="form-group">
-                    <label>宿主机 IP</label>
-                    <input type="text" id="sshHostInput" placeholder="如：192.168.1.100" value="localhost">
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>用户名</label>
-                        <input type="text" id="sshUserInput" placeholder="如：root" value="root">
-                    </div>
-                    <div class="form-group">
-                        <label>密码</label>
-                        <input type="password" id="sshPassInput" placeholder="宿主机密码">
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-primary" onclick="saveSSHConfigAndConnect()">💾 保存并连接</button>
-                <button class="btn btn-secondary" onclick="connectToHost(false)">🔌 仅连接</button>
-                <button class="btn btn-danger" onclick="deleteSSHConfig()">🗑️ 清除配置</button>
-            </div>
-        </div>
-    </div>
-    
     <script>
         let servers = [];
         let templates = {};
         let selectedServers = new Set();
-        let selectedTemplates = new Set();
         let batchMode = false;
-        let templateBatchMode = false;
         let currentLogsServer = null;
         let refreshInterval;
-        let sshSessionId = null;
-        
-        // Initialize on page load - 自动连接 SSH
-        window.addEventListener('load', async () => {
-            // 尝试加载保存的 SSH 配置并自动连接
-            try {
-                const response = await fetch('/api/ssh/config');
-                const data = await response.json();
-                
-                if (data.success && data.sshConfig && data.sshConfig.enabled) {
-                    // 有保存的配置，自动连接
-                    document.getElementById('sshHostInput').value = data.sshConfig.host;
-                    document.getElementById('sshUserInput').value = data.sshConfig.user;
-                    document.getElementById('sshPassInput').value = data.sshConfig.pass || '';
-                    
-                    // 同步到系统设置
-                    document.getElementById('sshConfigHost').value = data.sshConfig.host;
-                    document.getElementById('sshConfigUser').value = data.sshConfig.user;
-                    document.getElementById('sshConfigPass').value = data.sshConfig.pass || '';
-                    document.getElementById('sshEnabled').checked = data.sshConfig.enabled;
-                    document.getElementById('sshAutoConnect').checked = data.sshConfig.autoConnect;
-                    
-                    if (data.sshConfig.autoConnect && data.sshConfig.hasPassword) {
-                        // 自动连接
-                        setTimeout(() => {
-                            connectToHost(false, true); // 不保存（已保存），静默模式
-                        }, 500);
-                    } else {
-                        // 显示提示
-                        showToast('已加载 SSH 配置，请输入密码后连接', 'success');
-                    }
-                }
-            } catch (error) {
-                console.log('No saved SSH config or error loading');
-            } finally {
-                // Start auto-refresh after a delay
-                refreshInterval = setInterval(refreshStatus, 5000);
-            }
-        });
         
         function showToast(message, type = 'success') {
             const toast = document.getElementById('toast');
             toast.textContent = message;
             toast.className = `toast ${type} show`;
             setTimeout(() => toast.classList.remove('show'), 3000);
-        }
-        
-        // SSH Connection functions
-        function showSSHConnectModal() {
-            document.getElementById('sshConnectModal').classList.add('active');
-        }
-        
-        async function connectToHost(saveConfig = false, silentMode = false) {
-            const host = document.getElementById('sshHostInput').value;
-            const user = document.getElementById('sshUserInput').value;
-            const pass = document.getElementById('sshPassInput').value;
-            
-            if (!host || !user || !pass) {
-                if (!silentMode) {
-                    showToast('请填写完整信息', 'error');
-                }
-                return;
-            }
-            
-            try {
-                const response = await fetch('/api/ssh/connect', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ host, user, pass, saveConfig })
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    sshSessionId = data.sessionId;
-                    if (!silentMode) {
-                        showToast(saveConfig ? '宿主机连接成功，配置已保存！' : '宿主机连接成功！', 'success');
-                        document.getElementById('sshConnectModal').classList.remove('active');
-                    }
-                    
-                    // Update UI
-                    updateSSHStatus(true, host, user);
-                    
-                    // Store session info
-                    sessionStorage.setItem('sshSessionId', sshSessionId);
-                    sessionStorage.setItem('sshHost', host);
-                    sessionStorage.setItem('sshUser', user);
-                    
-                    // 同步到命令终端
-                    syncSSHTerminal(host, user, pass);
-                } else {
-                    if (!silentMode) {
-                        showToast('连接失败：' + data.error, 'error');
-                    } else {
-                        console.error('SSH connection failed:', data.error);
-                    }
-                }
-            } catch (error) {
-                if (!silentMode) {
-                    showToast('连接失败：' + error.message, 'error');
-                } else {
-                    console.error('SSH connection error:', error.message);
-                }
-            }
-        }
-        
-        async function saveSSHConfigAndConnect() {
-            const host = document.getElementById('sshHostInput').value;
-            const user = document.getElementById('sshUserInput').value;
-            const pass = document.getElementById('sshPassInput').value;
-            
-            if (!host || !user || !pass) {
-                showToast('请填写完整信息', 'error');
-                return;
-            }
-            
-            try {
-                // 先保存配置
-                await fetch('/api/ssh/config', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        host, 
-                        user, 
-                        pass, 
-                        enabled: true, 
-                        autoConnect: true 
-                    })
-                });
-                
-                // 然后连接
-                await connectToHost(false);
-                
-                showToast('配置已保存并连接成功！', 'success');
-            } catch (error) {
-                showToast('保存失败：' + error.message, 'error');
-            }
-        }
-        
-        async function deleteSSHConfig() {
-            if (!confirm('确定要清除保存的 SSH 配置吗？')) {
-                return;
-            }
-            
-            try {
-                await fetch('/api/ssh/config', {
-                    method: 'DELETE'
-                });
-                
-                showToast('配置已清除', 'success');
-                location.reload(); // 刷新页面
-            } catch (error) {
-                showToast('删除失败：' + error.message, 'error');
-            }
-        }
-        
-        // 从系统设置保存 SSH 配置
-        async function saveSSHConfigFromSettings() {
-            const host = document.getElementById('sshConfigHost').value;
-            const user = document.getElementById('sshConfigUser').value;
-            const pass = document.getElementById('sshConfigPass').value;
-            const enabled = document.getElementById('sshEnabled').checked;
-            const autoConnect = document.getElementById('sshAutoConnect').checked;
-            
-            if (!host || !user || !pass) {
-                showToast('请填写完整的 SSH 信息', 'error');
-                return;
-            }
-            
-            try {
-                const response = await fetch('/api/ssh/config', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ host, user, pass, enabled, autoConnect })
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    showToast('SSH 配置已保存！', 'success');
-                    
-                    // 同步到主界面的 SSH 输入框
-                    document.getElementById('sshHostInput').value = host;
-                    document.getElementById('sshUserInput').value = user;
-                    document.getElementById('sshPassInput').value = pass;
-                    
-                    // 自动连接
-                    setTimeout(() => {
-                        connectToHost(false);
-                    }, 500);
-                } else {
-                    showToast('保存失败：' + data.error, 'error');
-                }
-            } catch (error) {
-                showToast('保存失败：' + error.message, 'error');
-            }
-        }
-        
-        // 测试 SSH 连接
-        async function testSSHConnection() {
-            const host = document.getElementById('sshConfigHost').value;
-            const user = document.getElementById('sshConfigUser').value;
-            const pass = document.getElementById('sshConfigPass').value;
-            
-            if (!host || !user || !pass) {
-                showToast('请填写完整的 SSH 信息', 'error');
-                return;
-            }
-            
-            showToast('正在测试连接...', 'success');
-            
-            try {
-                const response = await fetch('/api/ssh/connect', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ host, user, pass, saveConfig: false })
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    showToast(`连接成功：${user}@${host}`, 'success');
-                } else {
-                    showToast('连接失败：' + data.error, 'error');
-                }
-            } catch (error) {
-                showToast('连接失败：' + error.message, 'error');
-            }
-        }
-        
-        // 从系统设置删除 SSH 配置
-        async function deleteSSHConfigFromSettings() {
-            if (!confirm('确定要清除 SSH 配置吗？清除后需要重新配置。')) {
-                return;
-            }
-            
-            try {
-                await fetch('/api/ssh/config', {
-                    method: 'DELETE'
-                });
-                
-                showToast('配置已清除', 'success');
-                
-                // 清空输入框
-                document.getElementById('sshConfigHost').value = '';
-                document.getElementById('sshConfigUser').value = 'root';
-                document.getElementById('sshConfigPass').value = '';
-                document.getElementById('sshEnabled').checked = false;
-                document.getElementById('sshAutoConnect').checked = false;
-                
-                // 断开当前连接
-                if (sshSessionId) {
-                    await fetch('/api/ssh/disconnect', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ sessionId: sshSessionId })
-                    });
-                    sshSessionId = null;
-                    updateSSHStatus(false);
-                }
-            } catch (error) {
-                showToast('删除失败：' + error.message, 'error');
-            }
-        }
-        
-        // 同步 SSH 信息到命令终端
-        function syncSSHTerminal(host, user, pass) {
-            // 填充命令终端的 SSH 表单
-            const termHost = document.getElementById('sshHost');
-            const termUser = document.getElementById('sshUser');
-            const termPass = document.getElementById('sshPass');
-            
-            if (termHost && termUser && termPass) {
-                termHost.value = host;
-                termUser.value = user;
-                termPass.value = pass;
-                
-                // 直接使用已有的 sshSessionId，不需要重新连接
-                if (sshSessionId) {
-                    // 更新命令终端的状态显示
-                    const status = document.getElementById('sshStatus');
-                    const output = document.getElementById('terminalOutput');
-                    const prompt = document.getElementById('terminalPrompt');
-                    
-                    if (status && output && prompt) {
-                        status.textContent = `已连接：${user}@${host}`;
-                        status.style.color = '#10b981';
-                        prompt.textContent = `[${user}@${host}]#`;
-                        output.innerHTML += `\n<div class="terminal-success">SSH 会话已同步：${user}@${host}</div>`;
-                        output.scrollTop = output.scrollHeight;
-                    }
-                    
-                    console.log('SSH terminal synced with session:', sshSessionId);
-                }
-            }
-        }
-        
-        function updateSSHStatus(connected, host, user) {
-            const badge = document.getElementById('sshStatusBadge');
-            const hostBadge = document.getElementById('sshHostBadge');
-            const disconnectBtn = document.getElementById('disconnectSshBtn');
-            
-            if (connected) {
-                badge.style.background = '#d1fae5';
-                badge.style.color = '#065f46';
-                badge.textContent = '✅ 已连接';
-                hostBadge.textContent = `${user}@${host}`;
-                disconnectBtn.style.display = 'block';
-            } else {
-                badge.style.background = '#fee2e2';
-                badge.style.color = '#991b1b';
-                badge.textContent = '❌ 未连接宿主机';
-                hostBadge.textContent = '';
-                disconnectBtn.style.display = 'none';
-            }
-        }
-        
-        function skipSSHConnection() {
-            document.getElementById('sshConnectModal').classList.remove('active');
-            showToast('已跳过连接，部分功能可能受限', 'warning');
-        }
-        
-        async function disconnectSSH() {
-            if (!sshSessionId) return;
-            
-            try {
-                await fetch('/api/ssh/disconnect', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ sessionId: sshSessionId })
-                });
-                
-                sshSessionId = null;
-                sessionStorage.removeItem('sshSessionId');
-                showToast('已断开宿主机连接', 'success');
-            } catch (error) {
-                console.error('Disconnect failed:', error);
-            }
         }
         
         async function fetchAPI(url, options = {}) {
@@ -1289,86 +784,6 @@
             await loadServers();
         }
         
-        async function batchDelete() {
-            if (selectedServers.size === 0) return;
-            
-            if (!confirm(`确定要删除选中的 ${selectedServers.size} 个服务器吗？此操作不可恢复！`)) {
-                return;
-            }
-            
-            try {
-                const data = await fetchAPI('/api/batch/delete', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ servers: Array.from(selectedServers) })
-                });
-                
-                const successCount = data.results.filter(r => r.success).length;
-                showToast(`已删除 ${successCount}/${selectedServers.size} 个服务器`);
-                clearSelection();
-                await loadServers();
-            } catch (error) {
-                console.error('Batch delete failed:', error);
-            }
-        }
-        
-        // Template batch operations
-        function toggleTemplateBatchMode() {
-            templateBatchMode = !templateBatchMode;
-            selectedTemplates.clear();
-            updateTemplateBatchBar();
-            renderTemplates();
-            showToast(templateBatchMode ? '模板批量选择模式已开启' : '模板批量选择模式已关闭');
-        }
-        
-        function toggleSelectTemplate(key) {
-            if (!templateBatchMode) return;
-            if (selectedTemplates.has(key)) {
-                selectedTemplates.delete(key);
-            } else {
-                selectedTemplates.add(key);
-            }
-            updateTemplateBatchBar();
-            renderTemplates();
-        }
-        
-        function updateTemplateBatchBar() {
-            const bar = document.getElementById('templateBatchBar');
-            const count = document.getElementById('selectedTemplateCount');
-            if (templateBatchMode && selectedTemplates.size > 0) {
-                bar.classList.add('active');
-                count.textContent = selectedTemplates.size;
-            } else {
-                bar.classList.remove('active');
-            }
-        }
-        
-        function clearTemplateSelection() {
-            selectedTemplates.clear();
-            updateTemplateBatchBar();
-            renderTemplates();
-        }
-        
-        async function batchDeleteTemplates() {
-            if (selectedTemplates.size === 0) return;
-            
-            if (!confirm(`确定要删除选中的 ${selectedTemplates.size} 个模板吗？此操作不可恢复！`)) {
-                return;
-            }
-            
-            try {
-                for (const key of selectedTemplates) {
-                    await fetchAPI(`/api/templates/${key}`, { method: 'DELETE' });
-                }
-                
-                showToast(`已删除 ${selectedTemplates.size} 个模板`);
-                clearTemplateSelection();
-                await loadTemplates();
-            } catch (error) {
-                console.error('Batch delete templates failed:', error);
-            }
-        }
-        
         async function startServer(name) {
             await fetchAPI(`/api/servers/${name}/start`, { method: 'POST' });
             showToast(`服务器 ${name} 已启动`);
@@ -1425,32 +840,13 @@
                 return;
             }
             
-            grid.innerHTML = templateList.map(([key, template]) => {
-                const isSelected = selectedTemplates.has(key);
-                return `
-                <div class="template-card ${isSelected ? 'selected' : ''}" data-key="${key}">
-                    <div style="display: flex; justify-content: space-between; align-items: start;">
-                        <div onclick="${batchMode ? `toggleSelectTemplate('${key}')` : `showTemplateModal('${key}')`}" style="flex: 1; cursor: pointer;">
-                            <h4>${template.name}</h4>
-                            <p>${template.description || ''}</p>
-                            <small style="color: #6b7280;">
-                                ${template.templateType === 'custom' 
-                                    ? `🔧 ${template.startCommand}` 
-                                    : `⚡ ${template.command} ${(template.args || []).join(' ').substring(0, 30)}...`}
-                            </small>
-                            <br>
-                            <span style="display: inline-block; margin-top: 5px; padding: 2px 8px; background: ${template.templateType === 'custom' ? '#fef3c7' : '#dbeafe'}; color: ${template.templateType === 'custom' ? '#92400e' : '#1e40af'}; border-radius: 4px; font-size: 12px;">
-                                ${template.templateType === 'custom' ? '自定义形式' : 'Supergateway 形式'}
-                            </span>
-                        </div>
-                        ${batchMode ? `<input type="checkbox" ${isSelected ? 'checked' : ''} onclick="event.stopPropagation(); toggleSelectTemplate('${key}')" style="margin-left: 10px;">` : ''}
-                    </div>
-                    <div class="template-actions" style="display: flex; gap: 5px; margin-top: 10px;">
-                        ${!batchMode ? `<button class="btn btn-sm btn-secondary" onclick="event.stopPropagation(); editTemplate('${key}')">✏️ 编辑</button>` : ''}
-                        ${!batchMode ? `<button class="btn btn-sm btn-danger" onclick="event.stopPropagation(); deleteTemplate('${key}')">🗑️ 删除</button>` : ''}
-                    </div>
+            grid.innerHTML = templateList.map(([key, template]) => `
+                <div class="template-card" onclick="showTemplateModal('${key}')" oncontextmenu="event.stopPropagation(); deleteTemplate('${key}')">
+                    <h4>${template.name}</h4>
+                    <p>${template.description || ''}</p>
+                    <small style="color: #6b7280;">${template.command} ${(template.args || []).join(' ').substring(0, 40)}...</small>
                 </div>
-            `}).join('');
+            `).join('');
         }
         
         function showTemplateModal(templateKey) {
@@ -1503,24 +899,11 @@
         }
         
         function showAddTemplateModal() {
-            // Clear all fields
-            document.getElementById('editTemplateKey').value = '';
-            document.getElementById('editTemplateType').value = 'supergateway';
-            document.getElementById('editTemplateName').value = '';
-            document.getElementById('editTemplateDesc').value = '';
-            document.getElementById('editTemplateCommand').value = '';
-            document.getElementById('editTemplateArgs').value = '[]';
-            document.getElementById('editTemplateEnv').value = '{}';
-            document.getElementById('editTemplateSupergateway').value = '{}';
-            document.getElementById('editTemplateNameCustom').value = '';
-            document.getElementById('editTemplateDescCustom').value = '';
-            document.getElementById('editTemplateStartCommand').value = '';
-            document.getElementById('editTemplateStopCommand').value = '';
-            document.getElementById('editTemplatePort').value = '';
-            document.getElementById('editTemplateEnvCustom').value = '{}';
-            
-            toggleTemplateTypeFields();
-            document.getElementById('editTemplateModal').classList.add('active');
+            document.getElementById('templateName').value = '';
+            document.getElementById('templateServerName').value = '';
+            document.getElementById('templateServerPort').value = '';
+            document.getElementById('templateCustomFields').innerHTML = '';
+            document.getElementById('templateModal').classList.add('active');
         }
         
         async function exportTemplates() {
@@ -1571,128 +954,6 @@
                 loadTemplates();
             } catch (error) {
                 showToast('删除失败：' + error.message, 'error');
-            }
-        }
-        
-        function editTemplate(key) {
-            const template = templates[key];
-            if (!template) return;
-            
-            document.getElementById('editTemplateKey').value = key;
-            
-            // Set template type
-            const templateType = template.templateType || 'supergateway';
-            document.getElementById('editTemplateType').value = templateType;
-            
-            if (templateType === 'custom') {
-                // Custom template fields
-                document.getElementById('editTemplateNameCustom').value = template.name || '';
-                document.getElementById('editTemplateDescCustom').value = template.description || '';
-                document.getElementById('editTemplateStartCommand').value = template.startCommand || '';
-                document.getElementById('editTemplateStopCommand').value = template.stopCommand || '';
-                document.getElementById('editTemplatePort').value = template.port || '';
-                document.getElementById('editTemplateEnvCustom').value = JSON.stringify(template.env || {}, null, 2);
-            } else {
-                // Supergateway template fields
-                document.getElementById('editTemplateName').value = template.name || '';
-                document.getElementById('editTemplateDesc').value = template.description || '';
-                document.getElementById('editTemplateCommand').value = template.command || '';
-                document.getElementById('editTemplateArgs').value = JSON.stringify(template.args || [], null, 2);
-                document.getElementById('editTemplateEnv').value = JSON.stringify(template.env || {}, null, 2);
-                document.getElementById('editTemplateSupergateway').value = JSON.stringify(template.supergatewayArgs || {}, null, 2);
-            }
-            
-            toggleTemplateTypeFields();
-            document.getElementById('editTemplateModal').classList.add('active');
-        }
-        
-        function toggleTemplateTypeFields() {
-            const type = document.getElementById('editTemplateType').value;
-            const sgFields = document.getElementById('editTemplateSgFields');
-            const customFields = document.getElementById('editTemplateCustomFields');
-            
-            if (type === 'supergateway') {
-                sgFields.style.display = 'block';
-                customFields.style.display = 'none';
-            } else {
-                sgFields.style.display = 'none';
-                customFields.style.display = 'block';
-            }
-        }
-        
-        function closeEditTemplateModal() {
-            document.getElementById('editTemplateModal').classList.remove('active');
-        }
-        
-        async function saveTemplate() {
-            const key = document.getElementById('editTemplateKey').value;
-            const type = document.getElementById('editTemplateType').value;
-            
-            let template;
-            if (type === 'custom') {
-                // Custom template
-                const name = document.getElementById('editTemplateNameCustom').value;
-                const description = document.getElementById('editTemplateDescCustom').value;
-                const startCommand = document.getElementById('editTemplateStartCommand').value;
-                const stopCommand = document.getElementById('editTemplateStopCommand').value;
-                const port = document.getElementById('editTemplatePort').value;
-                
-                if (!name || !startCommand) {
-                    showToast('模板名称和开启命令为必填项', 'error');
-                    return;
-                }
-                
-                const env = JSON.parse(document.getElementById('editTemplateEnvCustom').value || '{}');
-                
-                template = {
-                    templateType: 'custom',
-                    name,
-                    description,
-                    startCommand,
-                    stopCommand,
-                    port: port ? parseInt(port) : undefined,
-                    env
-                };
-            } else {
-                // Supergateway template
-                const name = document.getElementById('editTemplateName').value;
-                const description = document.getElementById('editTemplateDesc').value;
-                const command = document.getElementById('editTemplateCommand').value;
-                
-                if (!name || !command) {
-                    showToast('模板名称和命令为必填项', 'error');
-                    return;
-                }
-                
-                const args = JSON.parse(document.getElementById('editTemplateArgs').value || '[]');
-                const env = JSON.parse(document.getElementById('editTemplateEnv').value || '{}');
-                const supergatewayArgs = JSON.parse(document.getElementById('editTemplateSupergateway').value || '{}');
-                
-                template = {
-                    templateType: 'supergateway',
-                    name,
-                    description,
-                    command,
-                    args,
-                    env,
-                    supergatewayArgs
-                };
-            }
-            
-            try {
-                const templateKey = key || template.name.toLowerCase().replace(/[^a-z0-9]/g, '-');
-                
-                await fetchAPI('/api/templates', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ templates: { [templateKey]: template } })
-                });
-                
-                showToast(key ? '模板已保存' : '模板已创建');
-                closeEditTemplateModal();
-                loadTemplates();
-            } catch (error) {
-                showToast('保存失败：' + error.message, 'error');
             }
         }
         
@@ -2055,9 +1316,9 @@
             if (!currentLogsServer) return;
             try {
                 const data = await fetchAPI(`/api/servers/${currentLogsServer}/logs?lines=100`);
-                document.getElementById('logsBody').innerHTML = '<div class="terminal-log">' + (data.logs || '暂无日志').replace(/\n/g, '<br>') + '</div>';
+                document.getElementById('logsBody').textContent = data.logs || '暂无日志';
             } catch (error) {
-                document.getElementById('logsBody').innerHTML = '<div class="terminal-error">加载日志失败</div>';
+                document.getElementById('logsBody').textContent = '加载日志失败';
             }
         }
         
@@ -2164,107 +1425,6 @@
             return div.innerHTML;
         }
         
-        // SSH 连接管理
-        let sshConnected = false;
-        
-        async function connectSSH() {
-            const host = document.getElementById('sshHost').value.trim();
-            const user = document.getElementById('sshUser').value.trim() || 'root';
-            const pass = document.getElementById('sshPass').value;
-            const output = document.getElementById('terminalOutput');
-            const status = document.getElementById('sshStatus');
-            
-            if (!host) {
-                showToast('请输入 IP 地址', 'error');
-                return;
-            }
-            if (!pass) {
-                showToast('请输入密码', 'error');
-                return;
-            }
-            
-            status.textContent = '连接中...';
-            status.style.color = '#f59e0b';
-            
-            try {
-                const result = await fetchAPI('/api/ssh/connect', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ host, user, pass })
-                });
-                
-                sshSessionId = result.sessionId;
-                sshConnected = true;
-                status.textContent = `已连接: ${user}@${host}`;
-                status.style.color = '#10b981';
-                document.getElementById('terminalPrompt').textContent = `[${user}@${host}]#`;
-                output.innerHTML += `\n<div class="terminal-success">SSH 连接成功: ${user}@${host}</div>`;
-                showToast('SSH 连接成功');
-            } catch (error) {
-                status.textContent = '连接失败';
-                status.style.color = '#ef4444';
-                output.innerHTML += `\n<div class="terminal-error">SSH 连接失败: ${escapeHtml(error.message)}</div>`;
-                showToast('SSH 连接失败', 'error');
-            }
-            output.scrollTop = output.scrollHeight;
-        }
-        
-        async function disconnectSSH() {
-            if (!sshConnected) {
-                showToast('未连接 SSH', 'error');
-                return;
-            }
-            
-            try {
-                await fetchAPI('/api/ssh/disconnect', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ sessionId: sshSessionId })
-                });
-            } catch (e) {}
-            
-            sshConnected = false;
-            sshSessionId = null;
-            document.getElementById('sshStatus').textContent = '未连接';
-            document.getElementById('sshStatus').style.color = '#9ca3af';
-            document.getElementById('terminalPrompt').textContent = '$';
-            document.getElementById('terminalOutput').innerHTML += '\n<div class="terminal-success">SSH 已断开</div>';
-            showToast('SSH 已断开');
-        }
-        
-        // 修改 executeCommand 支持 SSH
-        const originalExecuteCommand = executeCommand;
-        executeCommand = async function() {
-            const input = document.getElementById('terminalInput');
-            const output = document.getElementById('terminalOutput');
-            const command = input.value.trim();
-            
-            if (!command) return;
-            
-            if (sshConnected) {
-                // SSH 模式
-                output.innerHTML += `\n<span class="terminal-prompt">${document.getElementById('terminalPrompt').textContent}</span> ${escapeHtml(command)}`;
-                input.value = '';
-                
-                try {
-                    const result = await fetchAPI('/api/ssh/execute', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ sessionId: sshSessionId, command })
-                    });
-                    
-                    if (result.stdout) output.innerHTML += '\n' + escapeHtml(result.stdout);
-                    if (result.stderr) output.innerHTML += '\n<span class="terminal-error">' + escapeHtml(result.stderr) + '</span>';
-                } catch (error) {
-                    output.innerHTML += '\n<span class="terminal-error">执行失败: ' + escapeHtml(error.message) + '</span>';
-                }
-                output.scrollTop = output.scrollHeight;
-            } else {
-                // 本地模式
-                await originalExecuteCommand();
-            }
-        };
-        
         // Auto refresh
         function startAutoRefresh() {
             refreshInterval = setInterval(loadServers, 5000);
@@ -2298,7 +1458,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (modal.id === 'editModal') closeModal();
                     if (modal.id === 'logsModal') closeLogs();
                     if (modal.id === 'templateModal') closeTemplateModal();
-                    if (modal.id === 'editTemplateModal') closeEditTemplateModal();
                 }
             });
         });

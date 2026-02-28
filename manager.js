@@ -288,6 +288,18 @@ class SupergatewayManager {
     return { command: 'npx', args };
   }
 
+  buildStopCommand(serverConfig) {
+    // For custom templates with stopCommand
+    if (serverConfig.stopCommand) {
+      return {
+        command: serverConfig.stopCommand.split(' ')[0],
+        args: serverConfig.stopCommand.split(' ').slice(1)
+      };
+    }
+    // Default to SIGTERM
+    return null;
+  }
+
   async startServer(name) {
     const server = this.config.servers.find(s => s.name === name);
     if (!server) throw new Error(`Server ${name} not found`);
@@ -345,24 +357,46 @@ class SupergatewayManager {
     const proc = this.processes.get(name);
     if (!proc) throw new Error(`Server ${name} not running`);
 
-    proc.process.kill('SIGTERM');
+    // Try custom stop command first if available
+    const server = this.config.servers.find(s => s.name === name);
+    const stopCmd = server ? this.buildStopCommand(server) : null;
     
-    await new Promise((resolve) => {
-      const timeout = setTimeout(() => {
-        proc.process.kill('SIGKILL');
-        resolve();
-      }, 5000);
-
-      proc.process.on('exit', () => {
-        clearTimeout(timeout);
-        resolve();
+    if (stopCmd) {
+      // Execute custom stop command
+      const { spawn } = await import('child_process');
+      const child = spawn(stopCmd.command, stopCmd.args);
+      
+      await new Promise((resolve) => {
+        const timeout = setTimeout(() => {
+          child.kill('SIGKILL');
+          resolve();
+        }, 5000);
+        
+        child.on('exit', () => {
+          clearTimeout(timeout);
+          resolve();
+        });
       });
-    });
+    } else {
+      // Default SIGTERM
+      proc.process.kill('SIGTERM');
+      
+      await new Promise((resolve) => {
+        const timeout = setTimeout(() => {
+          proc.process.kill('SIGKILL');
+          resolve();
+        }, 5000);
+        
+        proc.process.on('exit', () => {
+          clearTimeout(timeout);
+          resolve();
+        });
+      });
+    }
 
     this.processes.delete(name);
     this.stopHealthChecks(name);
     
-    const server = this.config.servers.find(s => s.name === name);
     if (server) {
       server.running = false;
       server.pid = null;
@@ -421,12 +455,126 @@ class SupergatewayManager {
     const template = templates[templateName];
     if (!template) throw new Error(`Template ${templateName} not found`);
 
-    return {
-      ...template,
-      ...customConfig,
-      enabled: false,
-      type: 'supergateway'
+    // Check template type
+    if (template.templateType === 'custom') {
+      // Custom template: use startCommand/stopCommand
+      return {
+        ...template,
+        ...customConfig,
+        enabled: false,
+        type: 'direct',
+        command: template.startCommand || template.command,
+        stopCommand: template.stopCommand,
+        running: false
+      };
+    } else {
+      // Supergateway template
+      return {
+        ...template,
+        ...customConfig,
+        enabled: false,
+        type: 'supergateway'
+      };
+    }
+  }
+
+  // SSH Config management
+  saveSSHConfig(sshConfig) {
+    if (!this.config.globalSettings) {
+      this.config.globalSettings = {};
+    }
+    this.config.globalSettings.sshConfig = {
+      host: sshConfig.host,
+      user: sshConfig.user,
+      pass: sshConfig.pass, // 注意：实际生产环境应该加密
+      enabled: sshConfig.enabled !== undefined ? sshConfig.enabled : true,
+      autoConnect: sshConfig.autoConnect !== undefined ? sshConfig.autoConnect : true
     };
+    this.saveConfig();
+    console.log('SSH config saved');
+  }
+
+  getSSHConfig() {
+    const config = this.config.globalSettings?.sshConfig;
+    if (config) {
+      return {
+        host: config.host,
+        user: config.user,
+        hasPassword: !!config.pass,
+        enabled: config.enabled,
+        autoConnect: config.autoConnect
+      };
+    }
+    return null;
+  }
+
+  getSSHConfigFull() {
+    return this.config.globalSettings?.sshConfig || null;
+  }
+
+  deleteSSHConfig() {
+    if (this.config.globalSettings?.sshConfig) {
+      delete this.config.globalSettings.sshConfig;
+      this.saveConfig();
+      console.log('SSH config deleted');
+    }
+  }
+
+  // 删除 MCP 服务器
+  async removeServer(name) {
+    const serverIndex = this.config.servers.findIndex(s => s.name === name);
+    if (serverIndex === -1) {
+      throw new Error(`Server ${name} not found`);
+    }
+
+    // 如果正在运行，先停止
+    if (this.processes.has(name)) {
+      await this.stopServer(name);
+    }
+
+    // 从配置中移除
+    this.config.servers.splice(serverIndex, 1);
+    this.saveConfig();
+    
+    console.log(`Server ${name} removed from configuration`);
+    return true;
+  }
+
+  // 更新模板
+  updateTemplate(templateName, updates) {
+    const templates = this.getTemplates();
+    if (!templates[templateName]) {
+      throw new Error(`Template ${templateName} not found`);
+    }
+
+    templates[templateName] = {
+      ...templates[templateName],
+      ...updates
+    };
+
+    if (!this.config.globalSettings.templates) {
+      this.config.globalSettings.templates = {};
+    }
+    this.config.globalSettings.templates = templates;
+    this.saveConfig();
+    
+    console.log(`Template ${templateName} updated`);
+    return templates[templateName];
+  }
+
+  // 删除模板
+  deleteTemplate(templateName) {
+    const templates = this.getTemplates();
+    if (!templates[templateName]) {
+      throw new Error(`Template ${templateName} not found`);
+    }
+
+    delete templates[templateName];
+    this.config.globalSettings.templates = templates;
+    this.saveConfig();
+    
+    console.log(`Template ${templateName} deleted`);
+    return true;
   }
 }
 
@@ -522,19 +670,71 @@ if (isMainModule) {
       console.log('Used ports:', manager.getUsedPorts().join(', '));
       break;
 
+    case 'remove':
+      if (!arg) {
+        console.log('Usage: node manager.js remove <server-name>');
+        process.exit(1);
+      }
+      manager.removeServer(arg).then(() => {
+        console.log(`Server ${arg} removed`);
+      }).catch(err => {
+        console.error(`Failed to remove ${arg}:`, err.message);
+        process.exit(1);
+      });
+      break;
+
+    case 'templates':
+      console.log('Available templates:');
+      const templates = manager.getTemplates();
+      Object.keys(templates).forEach(name => {
+        console.log(`  ${name}: ${templates[name].description || 'No description'}`);
+      });
+      break;
+
+    case 'update-template':
+      if (!arg) {
+        console.log('Usage: node manager.js update-template <template-name> \'{"key": "value"}\'');
+        process.exit(1);
+      }
+      const updateData = process.argv[4] ? JSON.parse(process.argv[4]) : {};
+      try {
+        manager.updateTemplate(arg, updateData);
+      } catch (err) {
+        console.error(`Failed to update template ${arg}:`, err.message);
+        process.exit(1);
+      }
+      break;
+
+    case 'delete-template':
+      if (!arg) {
+        console.log('Usage: node manager.js delete-template <template-name>');
+        process.exit(1);
+      }
+      try {
+        manager.deleteTemplate(arg);
+      } catch (err) {
+        console.error(`Failed to delete template ${arg}:`, err.message);
+        process.exit(1);
+      }
+      break;
+
     default:
       console.log('Supergateway Manager CLI');
       console.log('');
       console.log('Commands:');
-      console.log('  start <name>     - Start a server');
-      console.log('  stop <name>      - Stop a server');
-      console.log('  restart <name>   - Restart a server');
-      console.log('  status           - Show all server status');
-      console.log('  logs <name>      - Show server logs');
-      console.log('  backup           - Create config backup');
-      console.log('  backups          - List available backups');
-      console.log('  restore <name>   - Restore from backup');
-      console.log('  ports            - Show used ports');
+      console.log('  start <name>          - Start a server');
+      console.log('  stop <name>           - Stop a server');
+      console.log('  restart <name>        - Restart a server');
+      console.log('  remove <name>         - Remove a server from config');
+      console.log('  status                - Show all server status');
+      console.log('  logs <name>           - Show server logs');
+      console.log('  backup                - Create config backup');
+      console.log('  backups               - List available backups');
+      console.log('  restore <name>        - Restore from backup');
+      console.log('  ports                 - Show used ports');
+      console.log('  templates             - List available templates');
+      console.log('  update-template <n> <json> - Update a template');
+      console.log('  delete-template <n>   - Delete a template');
       break;
   }
 }

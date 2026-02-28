@@ -1,74 +1,40 @@
 {
   "servers": [
     {
-      "name": "fetch-server",
-      "enabled": true,
-      "port": 9001,
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-fetch"],
-      "supergatewayArgs": {
-        "stdio": true,
-        "outputTransport": "streamableHttp",
-        "port": 9001,
-        "cors": true
-      },
-      "env": {},
-      "autoRestart": true,
-      "maxRestarts": 5,
-      "healthCheck": {
-        "enabled": true,
-        "interval": 10000,
-        "endpoint": "/mcp",
-        "timeout": 5000
-      }
-    },
-    {
-      "name": "filesystem-server",
-      "enabled": false,
-      "port": 8001,
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/root/data"],
-      "supergatewayArgs": {
-        "stdio": true,
-        "outputTransport": "sse",
-        "port": 8001,
-        "ssePath": "/sse",
-        "messagePath": "/message",
-        "cors": true
-      },
-      "env": {},
-      "autoRestart": true,
-      "maxRestarts": 3,
-      "healthCheck": {
-        "enabled": true,
-        "interval": 10000,
-        "endpoint": "/sse",
-        "timeout": 5000
-      }
-    },
-    {
-      "name": "github-server",
-      "enabled": false,
-      "port": 8002,
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-github"],
-      "supergatewayArgs": {
-        "stdio": true,
-        "outputTransport": "sse",
-        "port": 8002,
-        "cors": true
-      },
+      "name": "OpenClaw MCP (NPX)",
+      "description": "OpenClaw MCP Bridge - Local 本地部署",
+      "templateType": "custom",
+      "startCommand": "npx openclaw-mcp --transport sse --port 3000",
+      "stopCommand": "pkill -f 'openclaw-mcp'",
+      "port": 9003,
       "env": {
-        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
+        "OPENCLAW_URL": "http://127.0.0.1:18789",
+        "OPENCLAW_GATEWAY_TOKEN": "your-gateway-token",
+        "AUTH_ENABLED": "true",
+        "MCP_CLIENT_ID": "openclaw",
+        "CORS_ORIGINS": "https://claude.ai"
       },
-      "autoRestart": true,
-      "maxRestarts": 3,
-      "healthCheck": {
-        "enabled": true,
-        "interval": 10000,
-        "endpoint": "/sse",
-        "timeout": 5000
-      }
+      "enabled": false,
+      "type": "direct",
+      "command": "npx openclaw-mcp --transport sse --port 3000",
+      "running": false
+    },
+    {
+      "name": "fetch",
+      "description": "HTTP 请求",
+      "templateType": "supergateway",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-fetch"
+      ],
+      "supergatewayArgs": {
+        "outputTransport": "streamableHttp",
+        "cors": true
+      },
+      "port": 9909,
+      "enabled": false,
+      "type": "supergateway"
     }
   ],
   "globalSettings": {
@@ -95,12 +61,21 @@
       "to": "your-qq@qq.com",
       "alertInterval": 14400000
     },
+    "sshConfig": {
+      "enabled": true,
+      "host": "111.231.8.22",
+      "user": "root",
+      "pass": "Zb@271828",
+      "autoConnect": true
+    },
     "templates": {
-      "filesystem": {
-        "name": "filesystem",
-        "description": "文件系统访问",
+        "templateType": "supergateway",
         "command": "npx",
-        "args": ["-y", "@modelcontextprotocol/server-filesystem", "/path/to/directory"],
+        "args": [
+          "-y",
+          "@modelcontextprotocol/server-filesystem",
+          "/path/to/directory"
+        ],
         "supergatewayArgs": {
           "outputTransport": "sse",
           "cors": true
@@ -109,8 +84,12 @@
       "github": {
         "name": "github",
         "description": "GitHub API 访问",
+        "templateType": "supergateway",
         "command": "npx",
-        "args": ["-y", "@modelcontextprotocol/server-github"],
+        "args": [
+          "-y",
+          "@modelcontextprotocol/server-github"
+        ],
         "env": {
           "GITHUB_PERSONAL_ACCESS_TOKEN": "your-token"
         },
@@ -122,8 +101,12 @@
       "fetch": {
         "name": "fetch",
         "description": "HTTP 请求",
+        "templateType": "supergateway",
         "command": "npx",
-        "args": ["-y", "@modelcontextprotocol/server-fetch"],
+        "args": [
+          "-y",
+          "@modelcontextprotocol/server-fetch"
+        ],
         "supergatewayArgs": {
           "outputTransport": "streamableHttp",
           "cors": true
@@ -132,8 +115,13 @@
       "postgres": {
         "name": "postgres",
         "description": "PostgreSQL 数据库",
+        "templateType": "supergateway",
         "command": "npx",
-        "args": ["-y", "@modelcontextprotocol/server-postgres", "postgresql://localhost/mydb"],
+        "args": [
+          "-y",
+          "@modelcontextprotocol/server-postgres",
+          "postgresql://localhost/mydb"
+        ],
         "supergatewayArgs": {
           "outputTransport": "sse",
           "cors": true
@@ -142,13 +130,119 @@
       "sqlite": {
         "name": "sqlite",
         "description": "SQLite 数据库",
+        "templateType": "supergateway",
         "command": "npx",
-        "args": ["-y", "@modelcontextprotocol/server-sqlite", "/path/to/database.db"],
+        "args": [
+          "-y",
+          "@modelcontextprotocol/server-sqlite",
+          "/path/to/database.db"
+        ],
         "supergatewayArgs": {
           "outputTransport": "sse",
           "cors": true
         }
+      },
+      "custom-node-app": {
+        "name": "自定义 Node.js 应用",
+        "description": "自定义形式的 Node.js 应用示例",
+        "templateType": "custom",
+        "startCommand": "node server.js",
+        "stopCommand": "pkill -f 'node server.js'",
+        "port": 3000,
+        "env": {
+          "NODE_ENV": "production",
+          "PORT": "3000"
+        }
+      },
+      "custom-python-service": {
+        "name": "自定义 Python 服务",
+        "description": "自定义形式的 Python 服务示例",
+        "templateType": "custom",
+        "startCommand": "python3 app.py",
+        "stopCommand": "pkill -f 'python3 app.py'",
+        "port": 5000,
+        "env": {
+          "FLASK_ENV": "production"
+        }
+      },
+      "openclaw-mcp-docker": {
+        "name": "OpenClaw MCP (Docker)",
+        "description": "OpenClaw MCP Bridge - Docker 部署（推荐）",
+        "templateType": "supergateway",
+        "command": "docker",
+        "args": [
+          "run",
+          "-d",
+          "--name",
+          "openclaw-mcp",
+          "--restart",
+          "unless-stopped",
+          "-p",
+          "3000:3000",
+          "-e",
+          "OPENCLAW_URL=http://host.docker.internal:18789",
+          "-e",
+          "AUTH_ENABLED=true",
+          "-e",
+          "MCP_CLIENT_ID=openclaw",
+          "-e",
+          "CORS_ORIGINS=https://claude.ai",
+          "--add-host",
+          "host.docker.internal:host-gateway",
+          "--read-only",
+          "--security-opt",
+          "no-new-privileges",
+          "ghcr.io/freema/openclaw-mcp:latest"
+        ],
+        "supergatewayArgs": {
+          "outputTransport": "sse",
+          "cors": true,
+          "port": 3000
+        }
+      },
+      "openclaw-mcp-npx": {
+        "name": "OpenClaw MCP (NPX)",
+        "description": "OpenClaw MCP Bridge - Local 本地部署",
+        "templateType": "custom",
+        "startCommand": "npx openclaw-mcp --transport sse --port 3000",
+        "stopCommand": "pkill -f 'openclaw-mcp'",
+        "port": 3000,
+        "env": {
+          "OPENCLAW_URL": "http://127.0.0.1:18789",
+          "OPENCLAW_GATEWAY_TOKEN": "your-gateway-token",
+          "AUTH_ENABLED": "true",
+          "MCP_CLIENT_ID": "openclaw",
+          "MCP_CLIENT_SECRET": "auto-generated-at-runtime",
+          "CORS_ORIGINS": "https://claude.ai"
+        }
+      },
+      "openclaw-mcp-remote": {
+        "name": "OpenClaw MCP (Remote SSE)",
+        "description": "OpenClaw MCP Bridge - Remote 远程部署（Claude.ai）",
+        "templateType": "custom",
+        "startCommand": "npx openclaw-mcp --transport sse --port 3000 --issuer-url https://mcp.your-domain.com",
+        "stopCommand": "pkill -f 'openclaw-mcp'",
+        "port": 3000,
+        "env": {
+          "OPENCLAW_URL": "http://127.0.0.1:18789",
+          "OPENCLAW_GATEWAY_TOKEN": "your-gateway-token",
+          "AUTH_ENABLED": "true",
+          "MCP_CLIENT_ID": "openclaw",
+          "MCP_CLIENT_SECRET": "your-secret-key-here",
+          "MCP_ISSUER_URL": "https://mcp.your-domain.com",
+          "CORS_ORIGINS": "https://claude.ai"
+        }
+      },
+      "test-template": {
+        "templateType": "supergateway",
+        "name": "Test Template",
+        "command": "npx"
       }
+    },
+    "sshConfig": {
+      "host": "111.231.8.22",
+      "user": "root",
+      "pass": "Zb@271828"
     }
   }
 }
