@@ -1,3 +1,4 @@
+<!-- MultiMCP v20260228130659 -->
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -1434,7 +1435,13 @@
         }
         
         // Event listeners
-        document.addEventListener('DOMContentLoaded', () => {
+        // Global error handler for debugging
+window.onerror = function(msg, url, line) {
+    console.error('Global error:', msg, 'at line', line);
+    return false;
+};
+
+document.addEventListener('DOMContentLoaded', () => {
             loadServers();
             startAutoRefresh();
         });
