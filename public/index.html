@@ -1331,11 +1331,14 @@
             const server = servers.find(s => s.name === serverName);
             if (!server) return;
             
+            // Generate config in MaxKB format: { serverName: { url, transport } }
             const maxkbConfig = {
-                name: server.name,
-                url: `http://localhost:${server.port}${getEndpoint(server)}`,
-                transport: server.supergatewayArgs?.outputTransport || 'sse',
-                type: 'streamable_http'
+                [server.name]: {
+                    url: `http://localhost:${server.port}${getEndpoint(server)}`,
+                    transport: server.supergatewayArgs?.outputTransport === 'streamableHttp' ? 'streamable_http' : 
+                               server.supergatewayArgs?.outputTransport === 'sse' ? 'sse' : 
+                               server.supergatewayArgs?.outputTransport || 'sse'
+                }
             };
             
             const configText = JSON.stringify(maxkbConfig, null, 2);
