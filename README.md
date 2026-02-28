@@ -1,4 +1,4 @@
-# MultiMCP Manager
+# MultiMCP
 
 一个功能完整的 MCP 服务器进程管理器，支持 supergateway 代理和直接命令执行。
 
@@ -38,7 +38,7 @@ node web-server.js
 
 访问 http://localhost:3457
 
-## �� CLI 使用
+## 📋 CLI 使用
 
 ```bash
 # 查看所有服务器状态
@@ -109,10 +109,10 @@ POST /api/execute              - 执行系统命令
 
 ```json
 {
-  "name": "fetch-server",
-  "url": "http://localhost:9001/mcp",
-  "transport": "streamable_http",
-  "type": "streamable_http"
+  "fetch-server": {
+    "url": "http://localhost:9001/mcp",
+    "transport": "streamable_http"
+  }
 }
 ```
 
@@ -237,3 +237,7 @@ MIT
 - GitHub: https://github.com/Ben5772/multimcp-manager
 - supergateway: https://github.com/modelcontextprotocol/supergateway
 - MaxKB: https://github.com/1Panel-dev/MaxKB
+
+---
+
+<small>Includes [supergateway](https://github.com/modelcontextprotocol/supergateway) component licensed under MIT. Copyright (c) Model Context Protocol</small>
