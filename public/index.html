@@ -265,6 +265,12 @@
         
         <!-- Templates Tab -->
         <div id="templatesTab" class="tab-content">
+            <div class="actions" style="margin-bottom: 15px;">
+                <button class="btn btn-primary" onclick="showAddTemplateModal()">➕ 添加模板</button>
+                <button class="btn btn-success" onclick="exportTemplates()">📤 导出模板</button>
+                <button class="btn btn-info" onclick="document.getElementById('importFile').click()">📥 导入模板</button>
+                <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importTemplates(event)">
+            </div>
             <h2 class="section-title">从模板创建服务器</h2>
             <div class="templates-grid" id="templatesGrid">
                 <div class="empty-state"><h3>加载中...</h3></div>
@@ -570,6 +576,24 @@
         </div>
     </div>
     
+    <!-- MaxKB Config Modal -->
+    <div class="modal" id="maxkbModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>📄 MaxKB MCP 配置</h3>
+                <button class="btn btn-secondary" onclick="closeMaxKBModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 15px; color: #6b7280;">复制以下 JSON 配置到 MaxKB 的 MCP 服务器配置中：</p>
+                <textarea id="maxkbConfigText" style="width: 100%; height: 300px; font-family: monospace; font-size: 13px; padding: 15px; border: 1px solid #d1d5db; border-radius: 6px; background: #f9fafb;"></textarea>
+                <div style="margin-top: 15px; display: flex; gap: 10px;">
+                    <button class="btn btn-primary" onclick="copyMaxKBConfig()">📋 复制配置</button>
+                    <button class="btn btn-success" onclick="downloadMaxKBConfig()">💾 下载文件</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <div class="toast" id="toast"></div>
     
     <script>
@@ -682,6 +706,7 @@
                         <button class="btn btn-danger" onclick="stopServer('${server.name}')" ${!server.running ? 'disabled' : ''}>⏹ 停止</button>
                         <button class="btn btn-warning" onclick="restartServer('${server.name}')">🔄 重启</button>
                         <button class="btn btn-secondary" onclick="viewLogs('${server.name}')">📋 日志</button>
+                        <button class="btn btn-info" onclick="generateMaxKBConfig('${server.name}')" style="margin-right: auto;">📄 MaxKB 配置</button>
                         <button class="btn btn-primary" onclick="editServer('${server.name}')">⚙️ 配置</button>
                     </div>
                 </div>
@@ -815,7 +840,7 @@
             }
             
             grid.innerHTML = templateList.map(([key, template]) => `
-                <div class="template-card" onclick="showTemplateModal('${key}')">
+                <div class="template-card" onclick="showTemplateModal('${key}')" oncontextmenu="event.stopPropagation(); deleteTemplate('${key}')">
                     <h4>${template.name}</h4>
                     <p>${template.description || ''}</p>
                     <small style="color: #6b7280;">${template.command} ${(template.args || []).join(' ').substring(0, 40)}...</small>
@@ -870,6 +895,65 @@
         
         function closeTemplateModal() {
             document.getElementById('templateModal').classList.remove('active');
+        }
+        
+        function showAddTemplateModal() {
+            document.getElementById('templateName').value = '';
+            document.getElementById('templateServerName').value = '';
+            document.getElementById('templateServerPort').value = '';
+            document.getElementById('templateCustomFields').innerHTML = '';
+            document.getElementById('templateModal').classList.add('active');
+        }
+        
+        async function exportTemplates() {
+            try {
+                const data = await fetchAPI('/api/templates/export');
+                const blob = new Blob([JSON.stringify(data.templates, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'multimcp-templates.json';
+                a.click();
+                URL.revokeObjectURL(url);
+                showToast('模板已导出');
+            } catch (error) {
+                console.error('Export failed:', error);
+            }
+        }
+        
+        function importTemplates(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const templates = JSON.parse(e.target.result);
+                    await fetchAPI('/api/templates/import', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ templates })
+                    });
+                    showToast('模板已导入');
+                    loadTemplates();
+                } catch (error) {
+                    showToast('导入失败：' + error.message, 'error');
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+        
+        async function deleteTemplate(key) {
+            if (!confirm(`确定要删除模板 "${key}" 吗？`)) return;
+            
+            try {
+                await fetchAPI(`/api/templates/${key}`, { method: 'DELETE' });
+                showToast('模板已删除');
+                loadTemplates();
+            } catch (error) {
+                showToast('删除失败：' + error.message, 'error');
+            }
         }
         
         async function createFromTemplate() {
@@ -1240,6 +1324,59 @@
         function closeLogs() {
             document.getElementById('logsModal').classList.remove('active');
             currentLogsServer = null;
+        }
+        
+        // MaxKB Config functions
+        function generateMaxKBConfig(serverName) {
+            const server = servers.find(s => s.name === serverName);
+            if (!server) return;
+            
+            const maxkbConfig = {
+                name: server.name,
+                url: `http://localhost:${server.port}${getEndpoint(server)}`,
+                transport: server.supergatewayArgs?.outputTransport || 'sse',
+                type: 'streamable_http'
+            };
+            
+            const configText = JSON.stringify(maxkbConfig, null, 2);
+            document.getElementById('maxkbConfigText').value = configText;
+            document.getElementById('maxkbModal').classList.add('active');
+        }
+        
+        function getEndpoint(server) {
+            const sgArgs = server.supergatewayArgs || {};
+            if (sgArgs.outputTransport === 'streamableHttp') {
+                return sgArgs.streamableHttpPath || '/mcp';
+            } else if (sgArgs.outputTransport === 'sse') {
+                return sgArgs.ssePath || '/sse';
+            } else {
+                return '/mcp';
+            }
+        }
+        
+        function copyMaxKBConfig() {
+            const text = document.getElementById('maxkbConfigText').value;
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('配置已复制到剪贴板');
+            }).catch(() => {
+                showToast('复制失败，请手动复制', 'error');
+            });
+        }
+        
+        function downloadMaxKBConfig() {
+            const text = document.getElementById('maxkbConfigText').value;
+            const blob = new Blob([text], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'maxkb-mcp-config.json';
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('配置文件已下载');
+        }
+        
+        function closeMaxKBModal() {
+            document.getElementById('maxkbModal').classList.remove('active');
         }
         
         // Terminal

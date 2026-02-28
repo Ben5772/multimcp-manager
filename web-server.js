@@ -385,3 +385,76 @@ app.listen(PORT, () => {
   console.log('  POST /api/backups/create       - Create backup');
   console.log('  POST /api/execute              - Execute shell command');
 });
+
+// Add custom template
+app.post('/api/templates', async (req, res) => {
+  try {
+    const { key, template } = req.body;
+    
+    if (!key || !template) {
+      return res.status(400).json({ error: 'Key and template required' });
+    }
+    
+    if (!manager.config.globalSettings.templates) {
+      manager.config.globalSettings.templates = {};
+    }
+    
+    manager.config.globalSettings.templates[key] = template;
+    manager.saveConfig();
+    res.json({ success: true, templates: manager.getTemplates() });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Delete template
+app.delete('/api/templates/:key', async (req, res) => {
+  try {
+    const templates = manager.getTemplates();
+    delete templates[req.params.key];
+    
+    manager.config.globalSettings.templates = templates;
+    manager.saveConfig();
+    res.json({ success: true, templates });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Export templates
+app.get('/api/templates/export', async (req, res) => {
+  try {
+    res.json({ 
+      success: true, 
+      templates: manager.getTemplates(),
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Import templates
+app.post('/api/templates/import', async (req, res) => {
+  try {
+    const { templates, merge = true } = req.body;
+    
+    if (!templates || typeof templates !== 'object') {
+      return res.status(400).json({ error: 'Invalid templates data' });
+    }
+    
+    if (!merge) {
+      manager.config.globalSettings.templates = templates;
+    } else {
+      if (!manager.config.globalSettings.templates) {
+        manager.config.globalSettings.templates = {};
+      }
+      Object.assign(manager.config.globalSettings.templates, templates);
+    }
+    
+    manager.saveConfig();
+    res.json({ success: true, templates: manager.getTemplates() });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
